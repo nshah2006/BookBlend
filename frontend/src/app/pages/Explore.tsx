@@ -1,37 +1,76 @@
-import { useState, useMemo } from "react";
-import { BOOKS, Book } from "../data/books";
+import { useEffect, useMemo, useState } from "react";
 import { Search, Filter, Sparkles, BookOpen, Star, Heart, Bookmark, Compass, X } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { toast } from "sonner";
+import { addBookToLibrary, getAuthToken, getBooks, getLatestRecommendation } from "../lib/api";
+import type { Book } from "../types/api";
 
 export function Explore() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedGenre, setSelectedGenre] = useState<string | null>(null);
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
+  const [books, setBooks] = useState<Book[]>([]);
+  const [genres, setGenres] = useState<string[]>([]);
+  const recommendationIds = useMemo(
+    () => new Set(getLatestRecommendation()?.recommendations.map((entry) => entry.book.id) ?? []),
+    [],
+  );
 
-  const genres = useMemo(() => {
-    const allGenres = BOOKS.flatMap(book => book.genre);
-    return Array.from(new Set(allGenres));
+  useEffect(() => {
+    const loadGenres = async () => {
+      try {
+        const response = await getBooks();
+        setGenres(response.genres);
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Unable to load book filters.");
+      }
+    };
+
+    void loadGenres();
   }, []);
 
-  const filteredBooks = useMemo(() => {
-    return BOOKS.filter(book => {
-      const matchesSearch = book.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                           book.author.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesGenre = selectedGenre ? book.genre.includes(selectedGenre) : true;
-      return matchesSearch && matchesGenre;
-    });
-  }, [searchQuery, selectedGenre]);
-
-  const addToLibrary = (book: Book) => {
-    toast.success(`'${book.title}' has been whisked away to your library!`, {
-      icon: <Sparkles className="text-secondary w-5 h-5" />,
-      style: {
-        background: "#14532d",
-        color: "#fefce8",
-        border: "1px solid #d4af37"
+  useEffect(() => {
+    const loadBooks = async () => {
+      try {
+        const response = await getBooks(searchQuery, selectedGenre ?? "");
+        const orderedBooks = [...response.books].sort((left, right) => {
+          const leftRecommended = recommendationIds.has(left.id) ? 1 : 0;
+          const rightRecommended = recommendationIds.has(right.id) ? 1 : 0;
+          return rightRecommended - leftRecommended;
+        });
+        setBooks(orderedBooks);
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Unable to load books.");
       }
-    });
+    };
+
+    void loadBooks();
+  }, [recommendationIds, searchQuery, selectedGenre]);
+
+  const addToShelf = async (book: Book, status: "reading" | "wishlist") => {
+    if (!getAuthToken()) {
+      toast.info("Sign in to save books to your library.");
+      return;
+    }
+
+    try {
+      await addBookToLibrary(book.id, status);
+      toast.success(
+        status === "wishlist"
+          ? `'${book.title}' has been added to your wanderlist.`
+          : `'${book.title}' has been whisked away to your library!`,
+        {
+          icon: <Sparkles className="text-secondary w-5 h-5" />,
+          style: {
+            background: "#14532d",
+            color: "#fefce8",
+            border: "1px solid #d4af37",
+          },
+        },
+      );
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to save that book.");
+    }
   };
 
   return (
@@ -99,10 +138,16 @@ export function Explore() {
       </div>
 
       {/* Grid */}
-      {filteredBooks.length > 0 ? (
+      {recommendationIds.size > 0 && (
+        <div className="mb-8 max-w-4xl mx-auto rounded-2xl border border-secondary/20 bg-secondary/10 px-6 py-4 text-center text-primary">
+          Your latest vibe blend is active. Recommended titles are pinned to the top of this catalog.
+        </div>
+      )}
+
+      {books.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-12">
           <AnimatePresence mode="popLayout">
-            {filteredBooks.map((book) => (
+            {books.map((book) => (
               <motion.div
                 key={book.id}
                 layout
@@ -115,23 +160,40 @@ export function Explore() {
               >
                 <div className="relative aspect-[3/4.5] rounded-[2rem] overflow-hidden mb-6 shadow-xl group-hover:shadow-secondary/30 transition-all border-2 border-transparent group-hover:border-secondary/40">
                   <img src={book.coverImage} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                  {recommendationIds.has(book.id) && (
+                    <div className="absolute top-4 left-4 rounded-full bg-secondary px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-secondary-foreground shadow-lg">
+                      Vibe Match
+                    </div>
+                  )}
                   <div className="absolute inset-0 bg-gradient-to-t from-primary/90 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-end p-8">
                     <p className="text-white text-sm line-clamp-3 mb-4 italic">"{book.description}"</p>
                     <button 
                       className="w-full bg-secondary text-primary py-3 rounded-xl font-bold text-sm shadow-xl"
                       onClick={(e) => {
                         e.stopPropagation();
-                        addToLibrary(book);
+                        void addToShelf(book, "reading");
                       }}
                     >
                       Summon to Library
                     </button>
                   </div>
                   <div className="absolute top-4 right-4 flex flex-col gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button className="p-3 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-secondary hover:text-primary transition-all shadow-lg">
+                    <button
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        void addToShelf(book, "wishlist");
+                      }}
+                      className="p-3 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-secondary hover:text-primary transition-all shadow-lg"
+                    >
                       <Bookmark className="w-4 h-4" />
                     </button>
-                    <button className="p-3 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-red-500 hover:text-white transition-all shadow-lg">
+                    <button
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        toast.info("Use the wanderlist button to save favorites.");
+                      }}
+                      className="p-3 bg-white/20 backdrop-blur-md rounded-full text-white hover:bg-red-500 hover:text-white transition-all shadow-lg"
+                    >
                       <Heart className="w-4 h-4" />
                     </button>
                   </div>
@@ -229,13 +291,22 @@ export function Explore() {
 
                 <div className="flex flex-col sm:flex-row gap-4 pt-10 border-t border-primary/5">
                   <button 
-                    onClick={() => { addToLibrary(selectedBook); setSelectedBook(null); }}
+                    onClick={() => {
+                      void addToShelf(selectedBook, "reading");
+                      setSelectedBook(null);
+                    }}
                     className="flex-grow bg-primary text-primary-foreground px-10 py-5 rounded-2xl font-bold text-lg hover:bg-primary/90 transition-all flex items-center justify-center gap-3 border-2 border-primary shadow-xl shadow-primary/10"
                   >
                     <Sparkles className="w-6 h-6 text-secondary" />
                     Add to Library
                   </button>
-                  <button className="bg-white border-2 border-primary/10 text-primary px-10 py-5 rounded-2xl font-bold text-lg hover:border-secondary hover:text-secondary transition-all flex items-center justify-center gap-3">
+                  <button
+                    onClick={() => {
+                      void addToShelf(selectedBook, "wishlist");
+                      setSelectedBook(null);
+                    }}
+                    className="bg-white border-2 border-primary/10 text-primary px-10 py-5 rounded-2xl font-bold text-lg hover:border-secondary hover:text-secondary transition-all flex items-center justify-center gap-3"
+                  >
                     <Heart className="w-6 h-6" />
                     Wanderlist
                   </button>

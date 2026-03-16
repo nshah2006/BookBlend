@@ -2,13 +2,15 @@ import { Outlet, Link, useLocation } from "react-router";
 import { Sparkles, Library, Compass, Search, Menu, X, Leaf, Home as HomeIcon, User, Trophy, Wand2, Moon, Sun } from "lucide-react";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { Toaster } from "sonner";
+import { Toaster, toast } from "sonner";
 import { useTheme } from "next-themes";
+import { getAuthToken, logout } from "./lib/api";
 
 export function Root() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(Boolean(getAuthToken()));
   const { theme, setTheme } = useTheme();
   const location = useLocation();
 
@@ -31,6 +33,21 @@ export function Root() {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  useEffect(() => {
+    setIsAuthenticated(Boolean(getAuthToken()));
+  }, [location.pathname]);
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      setIsAuthenticated(false);
+      setIsMenuOpen(false);
+      toast.success("You have been signed out.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to sign out.");
+    }
+  };
 
   const navItems = [
     { name: "Home", path: "/", icon: <HomeIcon className="w-5 h-5" /> },
@@ -139,9 +156,18 @@ export function Root() {
               </AnimatePresence>
             </button>
 
-            <Link to="/auth" className="bg-primary text-primary-foreground px-5 py-2 rounded-full text-sm font-semibold hover:brightness-110 transition-all border border-secondary/20">
-              Sign In
-            </Link>
+            {isAuthenticated ? (
+              <button
+                onClick={() => void handleLogout()}
+                className="bg-primary text-primary-foreground px-5 py-2 rounded-full text-sm font-semibold hover:brightness-110 transition-all border border-secondary/20"
+              >
+                Sign Out
+              </button>
+            ) : (
+              <Link to="/auth" className="bg-primary text-primary-foreground px-5 py-2 rounded-full text-sm font-semibold hover:brightness-110 transition-all border border-secondary/20">
+                Sign In
+              </Link>
+            )}
           </nav>
 
           {/* Mobile Menu Toggle & Theme Toggle */}
@@ -187,9 +213,15 @@ export function Root() {
                 </Link>
               ))}
               <hr className="border-primary/10" />
-              <Link to="/auth" onClick={() => setIsMenuOpen(false)} className="w-full bg-primary text-primary-foreground py-4 rounded-xl font-bold text-center">
-                Join the Circle
-              </Link>
+              {isAuthenticated ? (
+                <button onClick={() => void handleLogout()} className="w-full bg-primary text-primary-foreground py-4 rounded-xl font-bold text-center">
+                  Sign Out
+                </button>
+              ) : (
+                <Link to="/auth" onClick={() => setIsMenuOpen(false)} className="w-full bg-primary text-primary-foreground py-4 rounded-xl font-bold text-center">
+                  Join the Circle
+                </Link>
+              )}
             </div>
           </motion.div>
         )}

@@ -2,6 +2,8 @@ import { motion } from "motion/react";
 import { Wand2, Sparkles, Smile, CloudRain, Zap, Brain, Flame, Heart, BookOpen, Clock, ArrowRight } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router";
+import { toast } from "sonner";
+import { createRecommendation } from "../lib/api";
 
 export function MoodInput() {
   const navigate = useNavigate();
@@ -9,6 +11,7 @@ export function MoodInput() {
   const [depth, setDepth] = useState(50);
   const [pacing, setPacing] = useState(50);
   const [step, setStep] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const moods = [
     { id: "energetic", icon: <Zap className="w-8 h-8" />, label: "Energetic", color: "text-yellow-400 bg-yellow-400/10" },
@@ -19,8 +22,21 @@ export function MoodInput() {
     { id: "peaceful", icon: <Smile className="w-8 h-8" />, label: "Peaceful", color: "text-emerald-400 bg-emerald-400/10" },
   ];
 
-  const handleProcess = () => {
-    navigate("/processing");
+  const handleProcess = async () => {
+    if (!mood) {
+      toast.error("Choose a mood before asking for recommendations.");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      await createRecommendation({ mood, pacing, depth });
+      navigate("/processing");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to create recommendations.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -163,9 +179,10 @@ export function MoodInput() {
               </button>
               <button 
                 onClick={handleProcess}
-                className="p-6 bg-primary text-primary-foreground rounded-2xl font-bold hover:brightness-110 transition-all flex items-center justify-center gap-3 shadow-2xl border-2 border-secondary/20"
+                disabled={isSubmitting}
+                className="p-6 bg-primary text-primary-foreground rounded-2xl font-bold hover:brightness-110 transition-all flex items-center justify-center gap-3 shadow-2xl border-2 border-secondary/20 disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                Blend My Books <Wand2 className="w-5 h-5" />
+                {isSubmitting ? "Summoning Matches..." : "Blend My Books"} <Wand2 className="w-5 h-5" />
               </button>
             </div>
           </motion.div>

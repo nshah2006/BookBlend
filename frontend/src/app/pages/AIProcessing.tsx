@@ -1,12 +1,14 @@
 import { motion } from "motion/react";
-import { Sparkles, Brain, Wand2, Search, Zap, Heart, CloudRain, Star, Leaf, CheckCircle2 } from "lucide-react";
+import { Brain, Wand2, Zap, Heart, CheckCircle2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
+import { getLatestRecommendation } from "../lib/api";
 
 export function AIProcessing() {
   const navigate = useNavigate();
   const [progress, setProgress] = useState(0);
   const [currentAction, setCurrentAction] = useState("Sifting through the library's shadows...");
+  const topRecommendation = getLatestRecommendation()?.recommendations[0];
 
   const actions = [
     "Sifting through the library's shadows...",
@@ -77,6 +79,11 @@ export function AIProcessing() {
           <p className="text-primary-foreground/60 text-lg font-light max-w-xs mx-auto">
             {currentAction}
           </p>
+          {topRecommendation && (
+            <p className="text-primary-foreground/80 text-sm uppercase tracking-[0.2em]">
+              Preparing {topRecommendation.book.title} and nearby matches
+            </p>
+          )}
         </div>
 
         <div className="space-y-6">
