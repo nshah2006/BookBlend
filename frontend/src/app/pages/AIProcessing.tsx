@@ -42,8 +42,7 @@ export function AIProcessing() {
   }, []);
 
   return (
-    <div className="fixed inset-0 bg-primary z-[300] flex flex-col items-center justify-center p-6 text-center overflow-hidden">
-      {/* Background Aura */}
+    <div className="fixed inset-0 z-[300] flex flex-col items-center justify-center overflow-hidden bg-[#03192e] p-6 text-center">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <motion.div 
           animate={{ rotate: 360, scale: [1, 1.2, 1] }}
@@ -59,7 +58,7 @@ export function AIProcessing() {
           <motion.div 
             animate={{ rotate: 360 }}
             transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
-            className="w-48 h-48 border-4 border-dashed border-secondary/30 rounded-full flex items-center justify-center p-8"
+            className="flex h-48 w-48 items-center justify-center rounded-full border-4 border-dashed border-secondary/30 p-8"
           >
             <Wand2 className="w-24 h-24 text-secondary animate-pulse shadow-[0_0_20px_rgba(212,175,55,0.4)]" />
           </motion.div>
@@ -73,7 +72,7 @@ export function AIProcessing() {
         </div>
 
         <div className="space-y-6">
-          <h2 className="text-4xl font-serif text-primary-foreground italic tracking-wide">
+          <h2 className="text-5xl font-serif text-primary-foreground italic tracking-wide">
             Synthesizing Your <span className="text-secondary">Vibe</span>
           </h2>
           <p className="text-primary-foreground/60 text-lg font-light max-w-xs mx-auto">

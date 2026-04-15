@@ -1,7 +1,7 @@
+import React, { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { Wand2, Sparkles, ArrowRight, Star, Heart, Bookmark, Compass, Trophy, Zap, Brain, History, Library } from "lucide-react";
 import { Link, useNavigate } from "react-router";
-import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { addBookToLibrary, getAuthToken, getBooks, getProfile } from "../lib/api";
 import type { Book, ProfileResponse } from "../types/api";
@@ -73,7 +73,7 @@ export function Home() {
           transition={{ duration: 1, ease: "easeOut" }}
           className="relative z-10 text-center space-y-10 max-w-5xl px-4"
         >
-          <div className="inline-flex items-center gap-3 bg-white/5 backdrop-blur-md border border-white/10 px-6 py-2 rounded-full text-secondary text-sm font-bold uppercase tracking-[0.3em] shadow-[0_0_30px_rgba(212,175,55,0.2)] mx-auto">
+          <div className="inline-flex items-center gap-3 bg-background/25 backdrop-blur-md border border-border/30 px-6 py-2 rounded-full text-secondary text-sm font-bold uppercase tracking-[0.3em] shadow-[0_0_30px_rgba(212,175,55,0.2)] mx-auto">
             <Sparkles className="w-4 h-4" />
             Vibe-First AI Recommendations
           </div>
@@ -94,7 +94,7 @@ export function Home() {
             >
               Start Vibe Check <Wand2 className="w-6 h-6 group-hover:rotate-12 transition-transform" />
             </button>
-            <Link to="/explore" className="w-full sm:w-auto bg-white/5 backdrop-blur-md text-foreground border-2 border-white/10 px-12 py-6 rounded-3xl font-bold text-xl hover:bg-white/10 transition-all text-center">
+            <Link to="/explore" className="w-full sm:w-auto bg-background/25 backdrop-blur-md text-foreground border-2 border-border/30 px-12 py-6 rounded-3xl font-bold text-xl hover:bg-background/40 transition-all text-center">
               Explore the Catalog
             </Link>
           </div>
@@ -154,7 +154,7 @@ export function Home() {
                       event.stopPropagation();
                       void addToLibrary(book);
                     }}
-                    className="p-4 bg-black/40 backdrop-blur-md rounded-2xl text-white hover:bg-primary hover:text-primary-foreground transition-all shadow-xl"
+            className="p-4 bg-background/50 backdrop-blur-md rounded-2xl text-foreground hover:bg-primary hover:text-primary-foreground transition-all shadow-xl"
                   >
                     <Bookmark className="w-5 h-5" />
                   </button>
@@ -163,7 +163,7 @@ export function Home() {
                       event.stopPropagation();
                       toast.info("Wanderlist management is available from Explore and Library.");
                     }}
-                    className="p-4 bg-black/40 backdrop-blur-md rounded-2xl text-white hover:bg-red-500 hover:text-white transition-all shadow-xl"
+                    className="p-4 bg-background/50 backdrop-blur-md rounded-2xl text-foreground hover:bg-red-500 hover:text-white transition-all shadow-xl"
                   >
                     <Heart className="w-5 h-5" />
                   </button>
@@ -207,21 +207,17 @@ export function Home() {
             </p>
             <div className="grid grid-cols-2 gap-8">
               <div className="space-y-2">
-                <span className="text-4xl font-serif text-secondary font-bold">
-                  {profile?.stats.dayStreak ?? 0}d
-                </span>
+                <span className="text-4xl font-serif text-secondary font-bold">{profile?.stats.dayStreak ?? 0}d</span>
                 <p className="text-foreground/40 font-bold text-xs uppercase tracking-widest">Active Streak</p>
               </div>
               <div className="space-y-2">
-                <span className="text-4xl font-serif text-primary font-bold">
-                  {profile?.stats.readingAccuracy ?? 0}%
-                </span>
+                <span className="text-4xl font-serif text-primary font-bold">{profile?.stats.readingAccuracy ?? 0}%</span>
                 <p className="text-foreground/40 font-bold text-xs uppercase tracking-widest">Reading Accuracy</p>
               </div>
             </div>
             <button
               onClick={() => navigate(profile ? "/library" : "/auth")}
-              className="flex items-center gap-4 text-foreground font-bold text-lg group bg-white/5 p-4 rounded-3xl border border-white/10 hover:bg-white/10 transition-all w-fit"
+              className="flex items-center gap-4 text-foreground font-bold text-lg group bg-background/25 p-4 rounded-3xl border border-border/30 hover:bg-background/40 transition-all w-fit"
             >
               <span className="w-12 h-12 bg-primary rounded-2xl flex items-center justify-center text-primary-foreground group-hover:scale-110 transition-transform shadow-xl">
                 <Library className="w-6 h-6" />
@@ -232,17 +228,15 @@ export function Home() {
 
           <div className="relative group">
             <div className="absolute -inset-8 bg-primary/20 rounded-[4rem] blur-[80px] opacity-50 group-hover:opacity-100 transition-opacity" />
-            <div className="bg-background/80 backdrop-blur-xl rounded-[4rem] p-12 border border-white/10 shadow-3xl relative z-10 space-y-8">
+            <div className="bg-background/80 backdrop-blur-xl rounded-[4rem] p-12 border border-border/30 shadow-3xl relative z-10 space-y-8">
               <div className="flex justify-between items-center">
                 <h4 className="text-foreground font-serif italic text-2xl">Currently Reading</h4>
-                <span className="text-xs uppercase tracking-widest text-primary/40">
-                  {profile ? "Live profile data" : "Sign in to sync"}
-                </span>
+                <span className="text-xs uppercase tracking-widest text-primary/40">{profile ? "Live profile data" : "Sign in to sync"}</span>
               </div>
               {profile?.currentRead ? (
                 <>
-                  <div className="flex gap-6 items-center p-6 bg-white/5 rounded-[2rem] border border-white/5">
-                    <div className="w-24 h-32 bg-white rounded-2xl overflow-hidden shadow-2xl flex-shrink-0">
+                  <div className="flex gap-6 items-center p-6 bg-surface-container-low rounded-[2rem] border border-border/30">
+                    <div className="w-24 h-32 bg-card rounded-2xl overflow-hidden shadow-2xl flex-shrink-0">
                       <img src={profile.currentRead.coverImage} alt={profile.currentRead.title} className="w-full h-full object-cover" />
                     </div>
                     <div className="space-y-3 flex-grow">
@@ -250,16 +244,12 @@ export function Home() {
                       <div className="space-y-2">
                         <div className="flex justify-between text-[10px] font-bold text-foreground/40 uppercase tracking-widest">
                           <span>Progress</span>
-                          <span className="text-primary">
-                            {profile.history.find((entry) => entry.title === profile.currentRead?.title)?.progressPercent ?? 0}%
-                          </span>
+                          <span className="text-primary">{profile.history.find((entry) => entry.title === profile.currentRead?.title)?.progressPercent ?? 0}%</span>
                         </div>
-                        <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden">
+                        <div className="h-2 w-full bg-muted/60 rounded-full overflow-hidden">
                           <motion.div
                             initial={{ width: 0 }}
-                            animate={{
-                              width: `${profile.history.find((entry) => entry.title === profile.currentRead?.title)?.progressPercent ?? 0}%`,
-                            }}
+                            animate={{ width: `${profile.history.find((entry) => entry.title === profile.currentRead?.title)?.progressPercent ?? 0}%` }}
                             className="h-full bg-primary shadow-[0_0_10px_rgba(74,222,128,1)]"
                           />
                         </div>
@@ -267,18 +257,18 @@ export function Home() {
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
-                    <div className="p-6 bg-white/5 rounded-3xl text-center space-y-2 border border-white/5">
+                    <div className="p-6 bg-surface-container-low rounded-3xl text-center space-y-2 border border-border/30">
                       <span className="block text-2xl text-secondary font-serif font-bold">{profile.stats.pagesRead}</span>
                       <span className="text-[10px] text-foreground/30 uppercase font-bold tracking-widest">Pages Read</span>
                     </div>
-                    <div className="p-6 bg-white/5 rounded-3xl text-center space-y-2 border border-white/5">
+                    <div className="p-6 bg-surface-container-low rounded-3xl text-center space-y-2 border border-border/30">
                       <span className="block text-2xl text-primary font-serif font-bold">{profile.stats.timeSpentHours}h</span>
                       <span className="text-[10px] text-foreground/30 uppercase font-bold tracking-widest">Time Spent</span>
                     </div>
                   </div>
                 </>
               ) : (
-                <div className="p-8 bg-white/5 rounded-[2rem] border border-white/5 text-foreground/60">
+                <div className="p-8 bg-surface-container-low rounded-[2rem] border border-border/30 text-muted-foreground">
                   Sign in and save a few books to see your live reading progress, stats, and next recommendation here.
                 </div>
               )}

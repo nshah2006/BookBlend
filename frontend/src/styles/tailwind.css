@@ -1,4 +1,62 @@
-@import 'tailwindcss' source(none);
+@import 'tailwindcss';
 @source '../**/*.{js,ts,jsx,tsx}';
 
 @import 'tw-animate-css';
+
+@theme {
+  --color-primary: #03192e;
+  --color-primary-foreground: #ffffff;
+  --color-primary-container: #1a2e44;
+
+  --color-secondary: #e2f2e6; /* Calming sage */
+  --color-secondary-foreground: #022012;
+  --color-secondary-container: #b3dfc3;
+
+  --color-tertiary: #f8e1eb; /* Energetic plum */
+  --color-tertiary-foreground: #340c1e;
+  --color-tertiary-container: #ec9ec1;
+
+  --color-surface: #fbf9f4;
+  --color-surface-dim: #f0eee9;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #f5f3ee;
+  --color-surface-container: #eeebe6;
+  --color-surface-container-highest: #e6e4df;
+  
+  --color-on-surface: #1e1e1e;
+  --color-on-surface-variant: #45464F;
+
+  /* Aliasing shadcn */
+  --color-background: var(--color-surface);
+  --color-foreground: var(--color-on-surface);
+  --color-muted: var(--color-surface-container-highest);
+  --color-muted-foreground: var(--color-on-surface-variant);
+  --color-card: var(--color-surface-container-low);
+  --color-card-foreground: var(--color-on-surface);
+  --color-popover: var(--color-surface-container-lowest);
+  --color-popover-foreground: var(--color-on-surface);
+  --color-border: var(--color-surface-container-highest);
+  --color-input: var(--color-surface-container-highest);
+  --color-ring: var(--color-primary);
+
+  --font-serif: "Newsreader", serif;
+  --font-sans: "Inter", sans-serif;
+
+  --shadow-ambient: 0px 20px 40px rgba(0, 0, 0, 0.06);
+
+  --radius-xl: 1.5rem;
+  --radius-sm: 0.25rem;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    @apply font-sans;
+  }
+
+  /* Reset outline to support "ghost border" where needed */
+  * {
+    border-color: var(--color-border);
+  }
+}

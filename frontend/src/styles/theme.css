@@ -2,77 +2,76 @@
 
 :root {
   --font-size: 16px;
-  --background: #fdfcf0;
-  /* Parchment cream */
-  --foreground: #2d372d;
-  /* Softer dark green text */
+  --background: #fbf9f4;
+  --foreground: #1b1c19;
   --card: #ffffff;
-  --card-foreground: #2d372d;
+  --card-foreground: #1b1c19;
   --popover: #ffffff;
-  --popover-foreground: #2d372d;
+  --popover-foreground: #1b1c19;
 
-  --primary: #dcfce7;
-  /* Light Pastel Green */
-  --primary-foreground: #14532d;
-  /* Dark Forest Green for contrast */
+  --primary: #03192e;
+  --primary-foreground: #ffffff;
+  --secondary: #e2f2e6;
+  --secondary-foreground: #022012;
+  --tertiary: #f8e1eb;
+  --tertiary-foreground: #340c1e;
 
-  --secondary: #facc15;
-  /* Brighter Shimmering Gold */
-  --secondary-foreground: #14532d;
-
-  --tertiary: #f3e8ff;
-  /* Soft Lilac */
-  --tertiary-foreground: #6b21a8;
-  /* Deep Mystical Purple for contrast */
-
-  --muted: #f1f5f1;
-  --muted-foreground: #6b7280;
-  --accent: #fef9c3;
-  /* Soft gold/yellow */
-  --accent-foreground: #14532d;
+  --muted: #eeebe6;
+  --muted-foreground: #5c5f66;
+  --accent: #f5f3ee;
+  --accent-foreground: #1b1c19;
   --destructive: #7f1d1d;
   --destructive-foreground: #ffffff;
-  --border: #e5e7eb;
-  --input: transparent;
+  --border: #e6e4df;
+  --input: #e6e4df;
   --input-background: #ffffff;
-  --switch-background: #d1d5db;
+  --switch-background: #d5d8dc;
   --font-weight-medium: 500;
   --font-weight-normal: 400;
-  --ring: #d4af37;
+  --ring: #03192e;
   --radius: 1rem;
+
+  /* Surface ramp used throughout the app */
+  --surface: #fbf9f4;
+  --surface-dim: #f0eee9;
+  --surface-container-lowest: #ffffff;
+  --surface-container-low: #f5f3ee;
+  --surface-container: #eeebe6;
+  --surface-container-highest: #e6e4df;
 }
 
 .dark {
-  --background: #050705;
-  /* Deepest mystical black-green */
-  --foreground: #f0fdf4;
-  /* Lightest pastel green text - for high visibility */
-  --card: #0c120c;
-  --card-foreground: #f0fdf4;
-  --popover: #0c120c;
-  --popover-foreground: #f0fdf4;
+  --background: #0b1220;
+  --foreground: #e5edf8;
+  --card: #121b2d;
+  --card-foreground: #e5edf8;
+  --popover: #121b2d;
+  --popover-foreground: #e5edf8;
 
-  --primary: #4ade80;
-  /* Glowing Mint Green for high contrast in dark mode */
-  --primary-foreground: #052e16;
+  /* Use deeper fills in dark mode so text-on-fill remains legible */
+  --primary: #2563eb;
+  --primary-foreground: #eff6ff;
+  --secondary: #1f2d43;
+  --secondary-foreground: #dbeafe;
+  --tertiary: #4a2448;
+  --tertiary-foreground: #ffe4fb;
 
-  --secondary: #fde047;
-  /* Bright Shimmering Gold */
-  --secondary-foreground: #050705;
-
-  --tertiary: #d8b4fe;
-  /* Bright Lilac for dark mode accents */
-  --tertiary-foreground: #2e1065;
-
-  --muted: #142114;
-  --muted-foreground: #94a3b8;
-  --accent: #166534;
-  --accent-foreground: #fde047;
+  --muted: #1a2538;
+  --muted-foreground: #b8c4d8;
+  --accent: #22314a;
+  --accent-foreground: #e5edf8;
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
-  --border: #166534;
-  --input: #166534;
-  --ring: #4ade80;
+  --border: #33445f;
+  --input: #33445f;
+  --ring: #60a5fa;
+
+  --surface: #0b1220;
+  --surface-dim: #0f1828;
+  --surface-container-lowest: #111a2a;
+  --surface-container-low: #121b2d;
+  --surface-container: #1a2538;
+  --surface-container-highest: #33445f;
 }
 
 @theme inline {
@@ -99,15 +98,20 @@
   --color-input-background: var(--input-background);
   --color-switch-background: var(--switch-background);
   --color-ring: var(--ring);
+  --color-surface: var(--surface);
+  --color-surface-dim: var(--surface-dim);
+  --color-surface-container-lowest: var(--surface-container-lowest);
+  --color-surface-container-low: var(--surface-container-low);
+  --color-surface-container: var(--surface-container);
+  --color-surface-container-highest: var(--surface-container-highest);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 
-  /* Custom Fonts */
-  --font-serif: var(--font-serif);
-  --font-sans: var(--font-sans);
-  --font-script: var(--font-script);
+  --font-serif: "Playfair Display", serif;
+  --font-sans: "Montserrat", sans-serif;
+  --font-script: "Great Vibes", cursive;
 }
 
 @layer base {

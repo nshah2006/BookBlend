@@ -37,6 +37,18 @@ def get_current_auth_context(
         user_response = get_supabase_admin_client().auth.get_user(token)
         user = user_response.user
     except Exception as exc:
+        text = str(exc).lower()
+        if (
+            "nodename nor servname provided" in text
+            or "name or service not known" in text
+            or "temporary failure in name resolution" in text
+            or "connection refused" in text
+            or "timed out" in text
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Authentication service is currently unavailable.",
+            ) from exc
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Authentication required.",

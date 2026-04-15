@@ -7,7 +7,7 @@ export function NotFound() {
     <div className="container mx-auto px-6 py-24 min-h-[70vh] flex flex-col items-center justify-center text-center space-y-12">
       <div className="relative group">
         <div className="absolute -inset-12 bg-tertiary/20 rounded-full blur-[80px] opacity-50 group-hover:opacity-100 transition-opacity" />
-        <div className="relative w-48 h-48 bg-white/10 backdrop-blur-xl border-2 border-primary/5 rounded-[3rem] flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform duration-500">
+        <div className="relative w-48 h-48 bg-card/70 backdrop-blur-xl border-2 border-border/40 rounded-[3rem] flex items-center justify-center shadow-2xl group-hover:scale-110 transition-transform duration-500">
           <Ghost className="w-24 h-24 text-primary opacity-20" />
           <motion.div 
             animate={{ rotate: 360 }}
@@ -29,14 +29,14 @@ export function NotFound() {
       <div className="flex flex-col sm:flex-row gap-6 justify-center items-center pt-8">
         <Link 
           to="/"
-          className="w-full sm:w-auto bg-primary text-white px-10 py-5 rounded-2xl font-bold text-lg hover:bg-primary/90 transition-all flex items-center justify-center gap-3 shadow-xl border-2 border-secondary/20"
+          className="w-full sm:w-auto bg-primary text-primary-foreground px-10 py-5 rounded-2xl font-bold text-lg hover:bg-primary/90 transition-all flex items-center justify-center gap-3 shadow-xl border-2 border-secondary/20"
         >
           <Home className="w-5 h-5 text-secondary" />
           Back to Sanctuary
         </Link>
         <Link 
           to="/explore"
-          className="w-full sm:w-auto bg-white border-2 border-primary/10 text-primary px-10 py-5 rounded-2xl font-bold text-lg hover:border-tertiary hover:text-tertiary transition-all flex items-center justify-center gap-3 shadow-sm"
+          className="w-full sm:w-auto bg-card border-2 border-border/40 text-primary px-10 py-5 rounded-2xl font-bold text-lg hover:border-tertiary hover:text-tertiary transition-all flex items-center justify-center gap-3 shadow-sm"
         >
           <Search className="w-5 h-5 text-tertiary" />
           Find New Tales

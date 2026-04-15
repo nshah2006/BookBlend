@@ -80,6 +80,17 @@ class RecommendationsResponse(ApiModel):
     recommendations: list[RecommendationResult]
 
 
+class OracleChatInput(ApiModel):
+    message: str = Field(min_length=4, max_length=2000)
+    history: list[str] = Field(default_factory=list)
+
+
+class OracleChatResponse(ApiModel):
+    reply: str
+    inferred_input: RecommendationInput = Field(alias="inferredInput")
+    recommendations: list[RecommendationResult]
+
+
 class LibraryItem(ApiModel):
     user_id: str = Field(alias="userId")
     book_id: str = Field(alias="bookId")

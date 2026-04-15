@@ -50,6 +50,12 @@ export interface RecommendationsResponse {
   recommendations: RecommendationResult[];
 }
 
+export interface OracleChatResponse {
+  reply: string;
+  inferredInput: RecommendationInput;
+  recommendations: RecommendationResult[];
+}
+
 export interface LibraryItem {
   userId: string;
   bookId: string;

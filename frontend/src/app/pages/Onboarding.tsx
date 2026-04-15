@@ -1,5 +1,5 @@
+import React, { useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
-import { useState } from "react";
 import { Brain, Wand2, ArrowRight, ArrowLeft, Trophy } from "lucide-react";
 import { useNavigate } from "react-router";
 
@@ -10,25 +10,22 @@ export function Onboarding() {
   const steps = [
     {
       title: "Welcome to BookBlend",
-      description: "Tired of picking books by genre? We focus on the 'Vibe' — matching stories to your current headspace.",
+      description: "Tired of picking books by genre? We focus on the 'Vibe' - matching stories to your current headspace.",
       icon: <Wand2 className="w-24 h-24 text-secondary" />,
-      color: "bg-primary",
-      accent: "border-secondary"
+      color: "bg-primary text-primary-foreground",
     },
     {
       title: "Mood AI Synthesis",
       description: "Tell us how you're feeling, your desired pacing, and emotional depth. Our AI does the rest.",
       icon: <Brain className="w-24 h-24 text-tertiary" />,
-      color: "bg-tertiary/10 text-primary",
-      accent: "border-tertiary"
+      color: "bg-card text-card-foreground border border-border/40",
     },
     {
       title: "Gamified Growth",
       description: "Earn mystical badges, join reading circles, and complete quests to level up your reading journey.",
       icon: <Trophy className="w-24 h-24 text-primary" />,
-      color: "bg-secondary text-primary",
-      accent: "border-primary"
-    }
+      color: "bg-secondary text-secondary-foreground",
+    },
   ];
 
   const next = () => {
@@ -50,7 +47,7 @@ export function Onboarding() {
           exit={{ opacity: 0, x: -50 }}
           className="max-w-xl text-center space-y-12"
         >
-          <div className="relative inline-block p-12 bg-white/10 rounded-full backdrop-blur-md border border-white/20">
+          <div className="relative inline-block p-12 bg-background/25 rounded-full backdrop-blur-md border border-border/40">
             <motion.div
               animate={{ rotate: [0, 10, -10, 0], scale: [1, 1.1, 1] }}
               transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
@@ -60,27 +57,27 @@ export function Onboarding() {
           </div>
 
           <div className="space-y-6">
-            <h2 className={`text-5xl font-serif font-bold ${step === 1 ? "text-primary" : "text-white"}`}>
+            <h2 className={`text-5xl font-serif font-bold ${step === 1 ? "text-foreground" : "text-current"}`}>
               {steps[step].title}
             </h2>
-            <p className={`text-xl font-light leading-relaxed ${step === 1 ? "text-primary/60" : "text-white/80"}`}>
+            <p className={`text-xl font-light leading-relaxed ${step === 1 ? "text-muted-foreground" : "text-current/80"}`}>
               {steps[step].description}
             </p>
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-8">
             {step > 0 && (
-              <button 
+              <button
                 onClick={back}
-                className={`px-10 py-5 rounded-2xl font-bold flex items-center gap-2 border-2 ${step === 1 ? "border-primary/10 text-primary" : "border-white/20 text-white"} hover:bg-white/10 transition-all`}
+                className={`px-10 py-5 rounded-2xl font-bold flex items-center gap-2 border-2 ${step === 1 ? "border-border/40 text-foreground" : "border-current/30 text-current"} hover:bg-background/25 transition-all`}
               >
                 <ArrowLeft className="w-5 h-5" />
                 Return
               </button>
             )}
-            <button 
+            <button
               onClick={next}
-              className={`px-12 py-5 rounded-2xl font-bold flex items-center gap-2 border-2 ${step === 1 ? "bg-primary text-white border-primary" : "bg-white text-primary border-white"} hover:scale-105 transition-all shadow-2xl`}
+              className={`px-12 py-5 rounded-2xl font-bold flex items-center gap-2 border-2 ${step === 1 ? "bg-primary text-primary-foreground border-primary" : "bg-background text-foreground border-border/40"} hover:scale-105 transition-all shadow-2xl`}
             >
               {step < steps.length - 1 ? "Continue" : "Get Started"}
               <ArrowRight className="w-5 h-5" />
@@ -91,9 +88,9 @@ export function Onboarding() {
 
       <div className="absolute bottom-12 flex gap-3">
         {steps.map((_, i) => (
-          <div 
-            key={i} 
-            className={`w-3 h-3 rounded-full transition-all duration-500 ${step === i ? "bg-secondary scale-150 w-10 shadow-[0_0_10px_rgba(212,175,55,1)]" : "bg-white/20"}`} 
+          <div
+            key={i}
+            className={`w-3 h-3 rounded-full transition-all duration-500 ${step === i ? "bg-secondary scale-150 w-10 shadow-[0_0_10px_rgba(212,175,55,1)]" : "bg-foreground/20"}`}
           />
         ))}
       </div>

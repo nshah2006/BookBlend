@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { motion } from "motion/react";
 import { Trophy, Star, Heart, Flame, ArrowRight, MessageSquare, CheckCircle2, Brain } from "lucide-react";
 import { Link } from "react-router";
@@ -35,10 +35,7 @@ export function Challenges() {
       }
 
       try {
-        const [challengeResponse, leaderboardResponse] = await Promise.all([
-          getChallenges(),
-          getLeaderboard(),
-        ]);
+        const [challengeResponse, leaderboardResponse] = await Promise.all([getChallenges(), getLeaderboard()]);
         setChallenges(challengeResponse.challenges);
         setSummary(challengeResponse.summary);
         setLeaderboard(leaderboardResponse.entries);
@@ -79,30 +76,30 @@ export function Challenges() {
             Active Quests
           </motion.div>
           <h1 className="text-4xl md:text-6xl font-serif text-primary italic">Reading Challenges</h1>
-          <p className="text-primary/60 text-lg">Your backend quest progress updates from recommendations, reading, and completed books.</p>
+          <p className="text-muted-foreground text-lg">Your backend quest progress updates from recommendations, reading, and completed books.</p>
         </div>
         <div className="flex bg-card rounded-2xl p-4 shadow-xl border-2 border-primary/5 items-center gap-6 self-start md:self-auto">
           <div className="text-center">
             <span className="block text-2xl font-serif font-bold text-tertiary">{summary.totalXp}</span>
-            <span className="text-[10px] font-bold uppercase tracking-widest text-primary/40 dark:text-foreground/40">Total XP</span>
+            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Total XP</span>
           </div>
           <div className="w-px h-10 bg-primary/10" />
           <div className="text-center">
             <span className="block text-2xl font-serif font-bold text-secondary">Level {summary.level}</span>
-            <span className="text-[10px] font-bold uppercase tracking-widest text-primary/40 dark:text-foreground/40">Voyager Rank</span>
+            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Voyager Rank</span>
           </div>
         </div>
       </div>
 
       <div className="mb-12 rounded-2xl border border-primary/10 bg-card p-6 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-        <p className="text-primary/70">
+        <p className="text-muted-foreground">
           <span className="font-bold text-primary">{summary.completedChallenges}</span> completed quests and{" "}
           <span className="font-bold text-primary">{summary.activeChallenges}</span> active.
         </p>
-        <p className="text-primary/70">
+        <p className="text-muted-foreground">
           Challenge completion rate: <span className="font-bold text-tertiary">{summary.completionRate}%</span>
         </p>
-        <p className="text-primary/70 md:text-right">
+        <p className="text-muted-foreground md:text-right">
           Next level target: <span className="font-bold text-secondary">{summary.nextLevelXp} XP</span>
         </p>
       </div>
@@ -127,17 +124,17 @@ export function Challenges() {
                 {icons[challenge.id as keyof typeof icons] ?? <Trophy className="w-8 h-8 text-secondary" />}
               </div>
               <div className="space-y-2">
-                <h3 className="text-2xl font-serif font-bold text-primary dark:text-foreground group-hover:text-tertiary transition-colors">{challenge.title}</h3>
-                <p className="text-primary/60 dark:text-foreground/60 font-medium">{challenge.desc}</p>
+                <h3 className="text-2xl font-serif font-bold text-primary group-hover:text-tertiary transition-colors">{challenge.title}</h3>
+                <p className="text-muted-foreground font-medium">{challenge.desc}</p>
               </div>
             </div>
 
             <div className="space-y-4 pt-8 border-t border-primary/5">
               <div className="flex justify-between items-end text-xs font-bold uppercase tracking-widest">
-                <span className="text-primary/40 dark:text-foreground/40">Quest Progress</span>
+                <span className="text-muted-foreground">Quest Progress</span>
                 <span className="text-tertiary">{challenge.progress}%</span>
               </div>
-              <div className="h-2 w-full bg-primary/5 dark:bg-white/5 rounded-full overflow-hidden border border-primary/5 dark:border-white/5">
+              <div className="h-2 w-full bg-primary/5 rounded-full overflow-hidden border border-primary/5">
                 <motion.div
                   initial={{ width: 0 }}
                   animate={{ width: `${challenge.progress}%` }}
@@ -146,11 +143,11 @@ export function Challenges() {
                 />
               </div>
               <div className="flex justify-between items-center pt-2">
-                <span className="text-[10px] font-bold uppercase tracking-widest text-primary/30 dark:text-foreground/30 flex items-center gap-1">
+                <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-1">
                   <Star className="w-3 h-3 text-secondary" />
                   Reward: {challenge.reward}
                 </span>
-                <button className={`p-2 rounded-lg transition-all ${challenge.isCompleted ? "bg-secondary/10 text-secondary" : "hover:bg-primary/5 dark:hover:bg-white/5 text-primary/20 dark:text-white/20"}`}>
+                <button className={`p-2 rounded-lg transition-all ${challenge.isCompleted ? "bg-secondary/10 text-secondary" : "hover:bg-primary/5 text-primary/40"}`}>
                   <ArrowRight className="w-4 h-4" />
                 </button>
               </div>

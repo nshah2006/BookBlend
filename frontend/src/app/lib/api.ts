@@ -6,6 +6,7 @@ import type {
   LibraryResponse,
   ProfileResponse,
   RecommendationInput,
+  OracleChatResponse,
   RecommendationsResponse,
 } from "../types/api";
 
@@ -110,6 +111,13 @@ export async function createRecommendation(input: RecommendationInput) {
   });
   sessionStorage.setItem(RECOMMENDATION_KEY, JSON.stringify(response));
   return response;
+}
+
+export async function oracleChat(message: string, history: string[] = []) {
+  return request<OracleChatResponse>("/oracle/chat", {
+    method: "POST",
+    body: JSON.stringify({ message, history }),
+  });
 }
 
 export function getLatestRecommendation(): RecommendationsResponse | null {

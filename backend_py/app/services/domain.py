@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from uuid import uuid4
 from datetime import date, datetime, timezone
 from typing import Any
 
@@ -103,17 +104,20 @@ def to_public_user(profile: dict[str, Any]) -> PublicUser:
 
 
 def get_books(search: str = "", genre: str = "", featured: bool = False) -> list[Book]:
-    query = get_supabase_admin_client().table("books").select("*")
-    if search:
-        needle = f"%{search.lower()}%"
-        query = query.or_(
-            f"title.ilike.{needle},author.ilike.{needle},description.ilike.{needle}"
-        )
-    if genre:
-        query = query.contains("genre", [genre])
-    if featured:
-        query = query.eq("is_featured", True)
-    rows = _rows(query.execute())
+    try:
+        query = get_supabase_admin_client().table("books").select("*")
+        if search:
+            needle = f"%{search.lower()}%"
+            query = query.or_(
+                f"title.ilike.{needle},author.ilike.{needle},description.ilike.{needle}"
+            )
+        if genre:
+            query = query.contains("genre", [genre])
+        if featured:
+            query = query.eq("is_featured", True)
+        rows = _rows(query.execute())
+    except Exception:
+        return []
     return [map_book(row) for row in rows]
 
 
@@ -134,14 +138,19 @@ def get_book_or_404(book_id: str) -> Book:
 
 def score_book(book: Book, input_data: RecommendationInput) -> RecommendationResult:
     mood_weights: dict[str, list[str]] = {
-        "energetic": ["Adventure", "Magic", "Fantasy"],
-        "melancholic": ["Historical Fantasy", "Folklore", "Magical Realism"],
-        "curious": ["Mythology", "Fiction", "Retellings"],
-        "romantic": ["Romance", "Fantasy", "Magical Realism"],
-        "intense": ["Magic", "Fantasy", "Adventure"],
-        "peaceful": ["Folklore", "Historical Fantasy", "Magical Realism"],
+        "energetic": ["Adventure", "Action", "Fantasy", "Thriller"],
+        "melancholic": ["Literary Fiction", "Historical Fiction", "Drama"],
+        "melancholy": ["Literary Fiction", "Historical Fiction", "Drama"],
+        "contemplative": ["Literary Fiction", "Philosophy", "Fiction"],
+        "curious": ["Mystery", "Science Fiction", "Speculative Fiction", "Fiction"],
+        "romantic": ["Romance", "Drama", "Fiction"],
+        "intense": ["Thriller", "Suspense", "Horror", "Adventure"],
+        "peaceful": ["Fiction", "Slice of Life", "Contemporary"],
+        "whimsical": ["Fantasy", "Magical Realism", "Fairy Tales"],
+        "nostalgic": ["Historical Fiction", "Coming of Age", "Literary Fiction"],
+        "tense": ["Thriller", "Mystery", "Suspense", "Psychological Fiction"],
     }
-    preferred_genres = mood_weights.get(input_data.mood.lower(), ["Fantasy"])
+    preferred_genres = mood_weights.get(input_data.mood.lower(), ["Fiction", "Contemporary"])
     genre_matches = sum(1 for item in book.genre if item in preferred_genres)
     pacing_bias = 8 if input_data.pacing >= 70 else 4 if input_data.pacing <= 30 else 6
     depth_bias = 10 if input_data.depth >= 70 else 4 if input_data.depth <= 30 else 7
@@ -165,12 +174,14 @@ def score_book(book: Book, input_data: RecommendationInput) -> RecommendationRes
         else "resonant emotional range"
     )
 
+    genre_label = preferred_genres[0].lower() if preferred_genres else "fiction"
     return RecommendationResult(
         book=book,
         score=score,
         reason=(
-            f"Strong {preferred_genres[0].lower()} alignment with "
-            f"{pacing_text} and {depth_text}."
+            f"Matches your {input_data.mood} mood with {pacing_text} and {depth_text}."
+            if not genre_matches
+            else f"Strong {genre_label} match with {pacing_text} and {depth_text}."
         ),
     )
 
@@ -181,6 +192,51 @@ def build_recommendations(books: list[Book], input_data: RecommendationInput) ->
         key=lambda entry: entry.score,
         reverse=True,
     )[:4]
+
+
+def build_ai_recommendations(input_data: RecommendationInput) -> list[RecommendationResult]:
+    """
+    AI-powered recommendations:
+    1. Ollama analyzes mood → generates search queries
+    2. Google Books API fetches real books for those queries
+    3. Books are upserted to Supabase so shelf/library features work
+    4. Local scorer ranks results; Ollama's analysis prefixes each reason
+    Falls back to Supabase-seeded books if either service is unavailable.
+    """
+    from app.services.google_books import search_books, upsert_books_to_supabase
+    from app.services.ollama_service import analyze_mood
+
+    analysis = analyze_mood(input_data.mood, input_data.pacing, input_data.depth)
+    queries: list[str] = analysis.get("queries") or [f"{input_data.mood} fiction"]
+    mood_summary: str = analysis.get("analysis", "")
+
+    books = search_books(queries)
+    upsert_books_to_supabase(books)
+
+    # Pad with Supabase-seeded books if Google Books returned fewer than 4 unique results
+    if len(books) < 4:
+        seeded_books = get_books()
+        seen_title_authors = {(b.title.lower(), b.author.lower().split(",")[0].strip()) for b in books}
+        for b in seeded_books:
+            key = (b.title.lower(), b.author.lower().split(",")[0].strip())
+            if key not in seen_title_authors and len(books) < 8:
+                seen_title_authors.add(key)
+                books.append(b)
+
+    if not books:
+        return []
+
+    results = sorted(
+        [score_book(book, input_data) for book in books],
+        key=lambda entry: entry.score,
+        reverse=True,
+    )[:4]
+
+    if mood_summary:
+        for result in results:
+            result.reason = f"{mood_summary} {result.reason}"
+
+    return results
 
 
 def create_recommendation_request(
@@ -194,14 +250,24 @@ def create_recommendation_request(
         "pacing": input_data.pacing,
         "depth": input_data.depth,
     }
-    request_row = _one_or_none(
-        get_supabase_admin_client()
-        .table("recommendation_requests")
-        .insert(request_payload)
-        .execute()
-    )
+    try:
+        request_row = _one_or_none(
+            get_supabase_admin_client()
+            .table("recommendation_requests")
+            .insert(request_payload)
+            .execute()
+        )
+    except Exception:
+        request_row = None
+
     if not request_row:
-        raise HTTPException(status_code=500, detail="Unable to create recommendation request.")
+        return {
+            "id": str(uuid4()),
+            "mood": input_data.mood,
+            "pacing": input_data.pacing,
+            "depth": input_data.depth,
+            "created_at": now_iso(),
+        }
 
     rows = [
         {
@@ -214,7 +280,10 @@ def create_recommendation_request(
         for index, rec in enumerate(recommendations)
     ]
     if rows:
-        get_supabase_admin_client().table("recommendation_results").insert(rows).execute()
+        try:
+            get_supabase_admin_client().table("recommendation_results").insert(rows).execute()
+        except Exception:
+            pass
     return request_row
 
 

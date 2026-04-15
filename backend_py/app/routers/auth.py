@@ -15,6 +15,20 @@ def _extract_error_message(exc: Exception, fallback: str) -> str:
     return message or fallback
 
 
+def _is_upstream_unavailable(exc: Exception) -> bool:
+    text = str(exc).lower()
+    return any(
+        needle in text
+        for needle in (
+            "nodename nor servname provided",
+            "name or service not known",
+            "temporary failure in name resolution",
+            "connection refused",
+            "timed out",
+        )
+    )
+
+
 def _resolve_profile(user_id: str, email: str, display_name: str | None = None) -> dict[str, Any]:
     profile = fetch_profile(user_id)
     if profile:
@@ -38,6 +52,11 @@ def signup(payload: SignupInput) -> AuthResponse:
             }
         )
     except Exception as exc:
+        if _is_upstream_unavailable(exc):
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Authentication service is currently unavailable.",
+            ) from exc
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=_extract_error_message(exc, "An account with that email already exists."),
@@ -74,6 +93,11 @@ def login(payload: LoginInput) -> AuthResponse:
             {"email": payload.email.lower(), "password": payload.password}
         )
     except Exception as exc:
+        if _is_upstream_unavailable(exc):
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Authentication service is currently unavailable.",
+            ) from exc
         raise HTTPException(status_code=401, detail=_extract_error_message(exc, "Incorrect email or password.")) from exc
 
     user = result.user
@@ -81,7 +105,8 @@ def login(payload: LoginInput) -> AuthResponse:
     if not user or not user.id or not session or not session.access_token:
         raise HTTPException(status_code=401, detail="Incorrect email or password.")
 
-    profile = _resolve_profile(user.id, payload.email.lower(), user.user_metadata.get("display_name"))
+    metadata = user.user_metadata or {}
+    profile = _resolve_profile(user.id, payload.email.lower(), metadata.get("display_name"))
     return AuthResponse(token=session.access_token, user=to_public_user(profile))
 
 

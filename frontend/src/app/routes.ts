@@ -10,6 +10,8 @@ import { Auth } from "./pages/Auth";
 import { Onboarding } from "./pages/Onboarding";
 import { NotFound } from "./pages/NotFound";
 import { AIProcessing } from "./pages/AIProcessing";
+import { AuthCallback } from "./pages/AuthCallback";
+import { Oracle } from "./pages/Oracle";
 
 export const router = createBrowserRouter([
   {
@@ -49,8 +51,16 @@ export const router = createBrowserRouter([
         Component: Auth,
       },
       {
+        path: "auth/callback",
+        Component: AuthCallback,
+      },
+      {
         path: "tutorial",
         Component: Onboarding,
+      },
+      {
+        path: "oracle",
+        Component: Oracle,
       },
       {
         path: "*",

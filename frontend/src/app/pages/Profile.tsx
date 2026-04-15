@@ -1,18 +1,20 @@
-import { motion, AnimatePresence } from "motion/react";
-import { Trophy, Star, Zap, Flame, Sparkles, User, Settings, Share2, BookOpen, Library, CheckCircle2, History, Bookmark, ArrowRight } from "lucide-react";
+import { motion } from "motion/react";
+import { Sparkles, Zap, Flame, Trophy, LogOut, CheckCircle2, Bookmark } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Link } from "react-router";
+import { useNavigate } from "react-router";
 import { toast } from "sonner";
-import { getAuthToken, getProfile } from "../lib/api";
+import { getAuthToken, getProfile, logout } from "../lib/api";
 import type { ProfileResponse } from "../types/api";
 
 export function Profile() {
-  const [activeTab, setActiveTab] = useState("stats");
+  const navigate = useNavigate();
   const [profile, setProfile] = useState<ProfileResponse | null>(null);
 
   useEffect(() => {
     const load = async () => {
       if (!getAuthToken()) {
+        toast.error("Please sign in to view your profile.");
+        navigate("/auth");
         return;
       }
 
@@ -25,215 +27,180 @@ export function Profile() {
     };
 
     void load();
-  }, []);
-
-  if (!getAuthToken()) {
-    return (
-      <div className="container mx-auto px-6 py-12 max-w-5xl">
-        <div className="bg-card rounded-[3rem] p-10 shadow-2xl border-2 border-primary/5 text-center space-y-6">
-          <Sparkles className="w-16 h-16 text-secondary mx-auto" />
-          <h1 className="text-4xl font-serif text-primary">Sign in to view your profile</h1>
-          <p className="text-primary/60 max-w-2xl mx-auto">
-            Profile stats, reading history, saved vibes, and recommendation insights are all backed by the new API.
-          </p>
-          <Link to="/auth" className="inline-flex bg-primary text-primary-foreground px-8 py-4 rounded-2xl font-bold">
-            Enter the Sanctuary
-          </Link>
-        </div>
-      </div>
-    );
-  }
+  }, [navigate]);
 
   if (!profile) {
     return (
-      <div className="container mx-auto px-6 py-12 max-w-5xl">
-        <div className="bg-card rounded-[3rem] p-10 shadow-2xl border-2 border-primary/5 text-center text-primary/60">
-          Loading your profile...
-        </div>
+      <div className="min-h-[80vh] flex flex-col justify-center items-center">
+        <Sparkles className="w-8 h-8 text-primary/40 animate-pulse" />
+        <p className="mt-4 text-xs font-bold uppercase tracking-[0.2em] text-primary/40">Opening your archives...</p>
       </div>
     );
   }
 
-  const stats = [
-    { label: "Books Read", value: String(profile.stats.booksRead), icon: <BookOpen className="w-5 h-5 text-primary" /> },
-    { label: "Vibe Score", value: `${profile.stats.vibeScore}%`, icon: <Zap className="w-5 h-5 text-secondary" /> },
-    { label: "Day Streak", value: String(profile.stats.dayStreak), icon: <Flame className="w-5 h-5 text-orange-400" /> },
-    { label: "Quests", value: String(profile.stats.quests), icon: <Trophy className="w-5 h-5 text-emerald-400" /> },
-  ];
+  const handleLogout = async () => {
+    try {
+      await logout();
+      toast.success("Signed out successfully.");
+      navigate("/");
+    } catch {
+      toast.error("Unable to sign out.");
+    }
+  };
 
   return (
-    <div className="container mx-auto px-6 py-12 max-w-5xl">
-      <div className="bg-card rounded-[3rem] p-8 md:p-12 shadow-2xl border-2 border-primary/5 relative overflow-hidden">
-        <div className="flex flex-col md:flex-row gap-8 md:items-center justify-between mb-16">
-          <div className="flex items-center gap-8">
-            <div className="relative group">
-              <div className="w-32 h-32 md:w-40 md:h-40 bg-primary/10 rounded-[2.5rem] p-2 border-2 border-secondary/20 group-hover:border-primary transition-all">
-                <img src={profile.user.avatarUrl} alt={profile.user.displayName} className="w-full h-full object-cover rounded-[2rem] shadow-2xl group-hover:scale-105 transition-transform" />
-              </div>
-              <div className="absolute -bottom-2 -right-2 bg-secondary text-secondary-foreground p-3 rounded-2xl border-2 border-background shadow-xl">
-                <Sparkles className="w-5 h-5" />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <h1 className="text-4xl md:text-5xl font-serif text-foreground italic leading-tight">{profile.user.displayName}</h1>
-              <p className="text-foreground/60 font-medium flex items-center gap-2">
-                <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-                {profile.currentRead ? `Reading "${profile.currentRead.title}"` : "No active read right now"}
-              </p>
-              <div className="flex flex-wrap gap-2 pt-2">
-                {profile.badges.map((badge) => (
-                  <span key={badge} className="px-3 py-1 bg-primary/10 text-primary rounded-full text-[10px] font-bold uppercase tracking-widest border border-primary/20">
-                    {badge}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
-          <div className="flex gap-4">
-            <button onClick={() => toast.info("Settings controls can be added on top of the current profile API.")} className="p-5 bg-white/5 hover:bg-white/10 rounded-2xl border-2 border-white/5 transition-all text-foreground">
-              <Settings className="w-6 h-6" />
-            </button>
-            <button onClick={() => toast.success("Shareable profile links can be layered on later.")} className="flex-grow md:flex-grow-0 bg-primary text-primary-foreground px-8 py-5 rounded-2xl font-bold flex items-center justify-center gap-3 shadow-xl border-2 border-secondary/20 active:scale-95 transition-all">
-              <Share2 className="w-5 h-5" />
-              Share Vibe
-            </button>
-          </div>
-        </div>
+    <div className="min-h-screen bg-background text-foreground pb-24 font-sans">
+      {/* Decorative Blur */}
+      <div className="fixed inset-0 pointer-events-none opacity-20 -z-10">
+        <div className="absolute top-0 right-0 w-[40rem] h-[40rem] bg-secondary/10 rounded-full blur-[150px]" />
+      </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
-          {stats.map((stat, index) => (
-            <motion.div key={index} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.08 }} className="p-6 bg-background rounded-3xl border border-white/5 space-y-4 hover:shadow-xl hover:-translate-y-1 transition-all">
-              <div className="p-3 bg-card rounded-xl w-fit shadow-md">{stat.icon}</div>
-              <div className="space-y-1">
-                <span className="block text-3xl font-serif font-bold text-foreground">{stat.value}</span>
-                <span className="text-[10px] font-bold uppercase tracking-widest text-foreground/40">{stat.label}</span>
+      <div className="container mx-auto px-6 max-w-6xl pt-12 space-y-20">
+        <header className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+          <div className="space-y-4">
+            <h1 className="text-5xl md:text-7xl font-serif text-primary leading-[1.1] tracking-tight">
+              The year of <br />
+              <span className="italic text-primary/80">living literarily.</span>
+            </h1>
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-primary/10 shadow-lg">
+                <img src={profile.user.avatarUrl} alt={profile.user.displayName} className="w-full h-full object-cover" />
+              </div>
+              <div>
+                <p className="font-bold text-lg text-primary">{profile.user.displayName}</p>
+                <p className="text-primary/50 text-[10px] uppercase tracking-[0.2em] font-bold">Curator of Stories</p>
+              </div>
+            </div>
+          </div>
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-2 px-6 py-3 rounded-full bg-surface-container border border-border/20 text-xs font-bold uppercase tracking-widest hover:bg-surface-container-high transition-colors text-primary/60"
+          >
+            <LogOut className="w-4 h-4" /> Sign Out
+          </button>
+        </header>
+
+        {/* Stats Section */}
+        <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="md:col-span-2 bg-primary text-white p-10 md:p-14 rounded-[2.5rem] shadow-ambient relative overflow-hidden group"
+          >
+            <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl group-hover:bg-white/10 transition-colors" />
+            <div className="space-y-4 relative z-10">
+              <p className="text-sm font-bold uppercase tracking-[0.2em] text-white/60">Pages Devoured</p>
+              <h2 className="text-7xl md:text-9xl font-serif leading-none tracking-tighter">
+                {profile.stats.pagesRead.toLocaleString()}
+              </h2>
+              <p className="text-xl font-light text-white/80 max-w-sm pt-4">
+                You're reading {Math.round(profile.stats.pagesRead / profile.stats.timeSpentHours)} pages an hour. A truly voracious pace.
+              </p>
+            </div>
+          </motion.div>
+
+          <div className="flex flex-col gap-6">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+              className="bg-surface-container-low p-8 rounded-[2.5rem] flex-grow flex flex-col justify-center relative overflow-hidden shadow-sm border border-border/20 hover:border-border/40 transition-colors"
+            >
+              <div className="absolute right-0 bottom-0 opacity-10 translate-x-1/4 translate-y-1/4">
+                <Zap className="w-48 h-48 text-primary" />
+              </div>
+              <div className="relative z-10">
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary/40 mb-2">Vibe Match Score</p>
+                <p className="text-5xl font-serif text-primary">{profile.stats.vibeScore}%</p>
               </div>
             </motion.div>
-          ))}
-        </div>
 
-        <div className="flex border-b border-white/5 mb-12 overflow-x-auto whitespace-nowrap custom-scrollbar">
-          {[
-            { id: "stats", name: "Detailed Stats", icon: <Star className="w-4 h-4" /> },
-            { id: "history", name: "Reading Lore", icon: <History className="w-4 h-4" /> },
-            { id: "friends", name: "Social Circles", icon: <User className="w-4 h-4" /> },
-            { id: "saved", name: "Saved Vibes", icon: <Bookmark className="w-4 h-4" /> },
-          ].map((tab) => (
-            <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`flex items-center gap-3 px-8 py-4 text-sm font-bold transition-all relative ${activeTab === tab.id ? "text-primary" : "text-foreground/40 hover:text-foreground"}`}>
-              {tab.icon}
-              {tab.name}
-              {activeTab === tab.id && <motion.div layoutId="tab" className="absolute bottom-0 left-0 right-0 h-1 bg-primary rounded-t-full" />}
-            </button>
-          ))}
-        </div>
-
-        <AnimatePresence mode="wait">
-          {activeTab === "stats" && (
-            <motion.div key="stats" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-12">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-                <div className="space-y-8">
-                  <h3 className="text-2xl font-serif text-foreground italic">Preferred Emotional Depth</h3>
-                  <div className="space-y-6">
-                    {profile.insights.emotionalDepth.map((entry) => (
-                      <div key={entry.label} className="space-y-3">
-                        <div className="flex justify-between text-xs font-bold uppercase tracking-widest text-foreground/40">
-                          <span>{entry.label}</span>
-                          <span>{entry.value}%</span>
-                        </div>
-                        <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden">
-                          <motion.div initial={{ width: 0 }} animate={{ width: `${entry.value}%` }} transition={{ duration: 1.1 }} className={`h-full ${entry.color} rounded-full shadow-[0_0_10px_rgba(255,255,255,0.1)]`} />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div className="space-y-8">
-                  <h3 className="text-2xl font-serif text-foreground italic">Top Genres by Vibe</h3>
-                  <div className="flex flex-wrap gap-4">
-                    {profile.insights.topGenres.map((genre) => (
-                      <div key={genre} className="px-6 py-4 bg-background rounded-2xl border border-white/5 flex items-center gap-4 group hover:border-primary/30 transition-all cursor-pointer">
-                        <div className="w-8 h-8 bg-card rounded-lg flex items-center justify-center text-primary shadow-sm group-hover:scale-110 transition-transform">
-                          <Library className="w-4 h-4" />
-                        </div>
-                        <span className="font-bold text-foreground/80">{genre}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+              className="bg-surface-container-low p-8 rounded-[2.5rem] flex-grow flex flex-col justify-center relative overflow-hidden shadow-sm border border-border/20 hover:border-border/40 transition-colors"
+            >
+              <div className="absolute right-0 bottom-0 opacity-10 translate-x-1/4 translate-y-1/4">
+                <Flame className="w-48 h-48 text-primary" />
               </div>
+              <div className="relative z-10">
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary/40 mb-2">Current Streak</p>
+                <p className="text-5xl font-serif text-primary">{profile.stats.dayStreak} Days</p>
+              </div>
+            </motion.div>
+          </div>
+        </section>
 
-              <div className="p-10 bg-white/5 rounded-[2.5rem] border border-white/5 flex flex-col md:flex-row items-center gap-12">
-                <div className="relative group flex-shrink-0">
-                  <div className="w-32 h-32 bg-card rounded-3xl shadow-xl flex items-center justify-center p-4">
-                    <img
-                      src={profile.insights.nextRecommendation?.book.coverImage ?? profile.currentRead?.coverImage ?? "https://images.unsplash.com/photo-1544947950-fa07a98d237f?q=80&w=400"}
-                      alt="Recommended"
-                      className="w-full h-full object-cover rounded-2xl shadow-lg group-hover:scale-110 transition-transform duration-500"
+        {/* Saved Vibes / Reading History */}
+        <section className="space-y-8 pt-8">
+          <div className="flex items-baseline gap-4 border-b border-border/40 pb-4">
+            <h3 className="font-serif text-3xl text-primary">Vibe History</h3>
+            <span className="text-xs uppercase tracking-widest font-bold text-primary/40 text-left">Your completed and active journeys</span>
+          </div>
+
+          <div className="flex gap-6 overflow-x-auto pb-8 scrollbar-hide px-2">
+            {profile.history.map((entry, i) => (
+              <motion.div
+                key={`${entry.title}-${i}`}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.1 }}
+                className="min-w-[280px] w-[280px] shrink-0 bg-surface-container-lowest p-6 rounded-[2rem] shadow-ambient border border-border/10 space-y-6"
+              >
+                <div className="w-12 h-12 bg-surface-container rounded-2xl flex items-center justify-center text-primary/40 border border-border/20">
+                  <Bookmark className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="font-serif text-2xl text-primary leading-tight mb-2">{entry.title}</h4>
+                  <p className="text-primary/60 text-sm">by {entry.author}</p>
+                </div>
+                <div className="pt-4 border-t border-border/30 flex justify-between items-center">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-primary/40">{entry.status}</span>
+                  <span className="text-primary font-bold text-sm bg-primary/5 px-3 py-1 rounded-full">{entry.progressPercent}%</span>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+
+        {/* Current Read Spotlight */}
+        {profile.currentRead && (
+          <section className="bg-surface-container-low rounded-[3rem] p-10 md:p-16 border border-border/20 shadow-sm relative overflow-hidden group">
+            <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-primary/5 to-transparent pointer-events-none" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center relative z-10">
+              <div className="space-y-8">
+                <div className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest">
+                  <Zap className="w-3 h-3" /> Still Exploring
+                </div>
+                <div>
+                  <h3 className="text-4xl md:text-5xl font-serif leading-tight text-primary mb-4">
+                    {profile.currentRead.title}
+                  </h3>
+                  <p className="text-primary/60 text-lg">by {profile.currentRead.author}</p>
+                </div>
+
+                <div className="space-y-3 pt-4">
+                  <div className="flex justify-between text-[10px] font-bold text-primary/50 uppercase tracking-widest">
+                    <span>Progress</span>
+                    <span>{profile.history.find((e) => e.title === profile.currentRead?.title)?.progressPercent ?? 0}%</span>
+                  </div>
+                  <div className="h-3 w-full bg-primary/10 rounded-full overflow-hidden">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{
+                        width: `${profile.history.find((e) => e.title === profile.currentRead?.title)?.progressPercent ?? 0}%`,
+                      }}
+                      className="h-full bg-primary shadow-sm"
                     />
                   </div>
-                  <div className="absolute -top-2 -right-2 bg-secondary p-2 rounded-xl text-secondary-foreground shadow-xl">
-                    <CheckCircle2 className="w-4 h-4" />
-                  </div>
-                </div>
-                <div className="space-y-4 text-center md:text-left">
-                  <h4 className="text-2xl font-serif text-foreground">Next Vibe Prediction</h4>
-                  <p className="text-foreground/60 max-w-lg leading-relaxed">
-                    {profile.insights.nextRecommendation
-                      ? `${profile.insights.nextRecommendation.book.title} is your strongest current match. ${profile.insights.nextRecommendation.reason}`
-                      : "Complete a vibe check to generate a fresh personalized recommendation."}
-                  </p>
-                  <Link to="/mood-input" className="text-primary font-bold flex items-center gap-2 group mx-auto md:mx-0 hover:text-secondary transition-colors">
-                    Refresh Insights <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                  </Link>
                 </div>
               </div>
-            </motion.div>
-          )}
-
-          {activeTab === "history" && (
-            <motion.div key="history" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="space-y-4">
-              {profile.history.map((entry) => (
-                <div key={`${entry.title}-${entry.savedAt}`} className="rounded-2xl border border-primary/10 bg-background px-6 py-5 flex items-center justify-between gap-4">
-                  <div>
-                    <p className="font-serif text-xl text-foreground">{entry.title}</p>
-                    <p className="text-sm text-foreground/50">by {entry.author}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-xs uppercase tracking-widest text-primary/40">{entry.status}</p>
-                    <p className="font-bold text-primary">{entry.progressPercent}%</p>
-                  </div>
+              <div className="flex justify-center md:justify-end">
+                <div className="relative w-48 shadow-2xl rounded-2xl overflow-hidden group-hover:-translate-y-2 transition-transform duration-500">
+                  <img src={profile.currentRead.coverImage} alt={profile.currentRead.title} className="w-full h-auto object-cover" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
                 </div>
-              ))}
-            </motion.div>
-          )}
-
-          {activeTab === "saved" && (
-            <motion.div key="saved" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {profile.savedBooks.map((book) => (
-                <div key={book.id} className="rounded-[2rem] border border-primary/10 bg-background p-6 flex gap-4 items-center">
-                  <img src={book.coverImage} alt={book.title} className="w-20 h-28 rounded-2xl object-cover shadow-lg" />
-                  <div className="space-y-2">
-                    <p className="font-serif text-2xl text-foreground">{book.title}</p>
-                    <p className="text-sm text-foreground/50">by {book.author}</p>
-                    <div className="flex flex-wrap gap-2">
-                      {book.genre.slice(0, 2).map((genre) => (
-                        <span key={genre} className="px-3 py-1 text-[10px] uppercase tracking-widest rounded-full bg-primary/10 text-primary font-bold">
-                          {genre}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </motion.div>
-          )}
-
-          {activeTab === "friends" && (
-            <motion.div key="friends" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="rounded-[2rem] border border-primary/10 bg-background p-8 text-foreground/60">
-              Social circles are referenced by the product, but concrete backend circle membership and feeds can be layered on after the current auth, library, and challenge stack.
-            </motion.div>
-          )}
-        </AnimatePresence>
+              </div>
+            </div>
+          </section>
+        )}
       </div>
     </div>
   );

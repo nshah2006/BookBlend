@@ -1,3 +1,5 @@
+import os
+
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -16,6 +18,18 @@ from app.routers import (
 
 def create_app() -> FastAPI:
     settings = get_settings()
+
+    if settings.disable_http_proxy:
+        for key in (
+            "HTTP_PROXY",
+            "HTTPS_PROXY",
+            "ALL_PROXY",
+            "http_proxy",
+            "https_proxy",
+            "all_proxy",
+        ):
+            os.environ.pop(key, None)
+
     app = FastAPI(title=settings.app_name)
 
     app.add_middleware(

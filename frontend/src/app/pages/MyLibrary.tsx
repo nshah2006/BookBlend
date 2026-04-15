@@ -80,7 +80,7 @@ export function MyLibrary() {
   if (!getAuthToken()) {
     return (
       <div className="container mx-auto px-6 py-12">
-        <div className="text-center py-32 space-y-8 bg-white/30 backdrop-blur-md rounded-[3rem] border-2 border-dashed border-primary/10">
+        <div className="text-center py-32 space-y-8 bg-card/80 backdrop-blur-md rounded-[3rem] border-2 border-dashed border-border/50">
           <div className="w-32 h-32 bg-accent/30 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-secondary/20 relative group">
             <Library className="w-16 h-16 text-secondary opacity-20" />
             <motion.div animate={{ rotate: 360 }} transition={{ duration: 20, repeat: Infinity, ease: "linear" }} className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -113,13 +113,13 @@ export function MyLibrary() {
           <p className="text-primary/60 text-lg">Live data from your library, including shelves and progress.</p>
         </div>
 
-        <div className="flex bg-white/50 backdrop-blur-md p-1.5 rounded-2xl border border-primary/10 shadow-xl self-start md:self-auto">
+        <div className="flex bg-card/80 backdrop-blur-md p-1.5 rounded-2xl border border-border/40 shadow-xl self-start md:self-auto">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-3 px-6 py-3 rounded-xl text-sm font-bold transition-all ${
-                activeTab === tab.id ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-105" : "text-primary/50 hover:text-primary hover:bg-white/50"
+                activeTab === tab.id ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20 scale-105" : "text-muted-foreground hover:text-primary hover:bg-muted/60"
               }`}
             >
               {tab.icon}
@@ -137,7 +137,7 @@ export function MyLibrary() {
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: index * 0.08 }}
-              className="group bg-white rounded-[2.5rem] border-2 border-primary/5 p-8 flex flex-col md:flex-row gap-12 hover:shadow-2xl hover:border-secondary/30 transition-all relative overflow-hidden"
+              className="group bg-card rounded-[2.5rem] border-2 border-border/40 p-8 flex flex-col md:flex-row gap-12 hover:shadow-2xl hover:border-secondary/30 transition-all relative overflow-hidden"
             >
               <div className="absolute top-0 left-12 w-8 h-12 bg-secondary/20 rounded-b-lg border-x-2 border-b-2 border-secondary group-hover:bg-secondary group-hover:h-16 transition-all flex items-end justify-center pb-2">
                 <Bookmark className="w-4 h-4 text-secondary group-hover:text-primary transition-colors" />
@@ -190,7 +190,7 @@ export function MyLibrary() {
                     )}
                     <button
                       onClick={() => void removeItem(item.bookId)}
-                      className="p-4 bg-white border-2 border-primary/10 text-destructive/40 hover:text-destructive hover:border-destructive/20 rounded-2xl transition-all shadow-sm"
+                      className="p-4 bg-card border-2 border-border/40 text-destructive/60 hover:text-destructive hover:border-destructive/40 rounded-2xl transition-all shadow-sm"
                     >
                       <Trash2 className="w-5 h-5" />
                     </button>
@@ -201,7 +201,7 @@ export function MyLibrary() {
           ))}
         </div>
       ) : (
-        <div className="text-center py-32 space-y-8 bg-white/30 backdrop-blur-md rounded-[3rem] border-2 border-dashed border-primary/10">
+        <div className="text-center py-32 space-y-8 bg-card/80 backdrop-blur-md rounded-[3rem] border-2 border-dashed border-border/50">
           <div className="w-32 h-32 bg-accent/30 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-secondary/20 relative group">
             <Library className="w-16 h-16 text-secondary opacity-20" />
             <motion.div animate={{ rotate: 360 }} transition={{ duration: 20, repeat: Infinity, ease: "linear" }} className="absolute inset-0 flex items-center justify-center pointer-events-none">
