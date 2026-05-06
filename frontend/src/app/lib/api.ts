@@ -6,6 +6,7 @@ import type {
   LibraryResponse,
   ProfileResponse,
   RecommendationInput,
+  RecommendationResult,
   OracleChatResponse,
   RecommendationsResponse,
 } from "../types/api";
@@ -118,6 +119,54 @@ export async function oracleChat(message: string, history: string[] = []) {
     method: "POST",
     body: JSON.stringify({ message, history }),
   });
+}
+
+export type OracleStreamEvent =
+  | { content: string; done?: never; recommendations?: never }
+  | { done: true; recommendations: RecommendationResult[]; content?: never };
+
+export async function* streamOracleChat(
+  message: string,
+  history: string[] = [],
+): AsyncGenerator<OracleStreamEvent> {
+  const response = await fetch(`${API_BASE_URL}/oracle/chat/stream`, {
+    method: "POST",
+    headers: getHeaders(),
+    body: JSON.stringify({ message, history }),
+  });
+
+  if (!response.ok) {
+    const errorBody = (await response.json().catch(() => null)) as { error?: string } | null;
+    throw new Error(errorBody?.error ?? "Oracle is unavailable.");
+  }
+  if (!response.body) throw new Error("Streaming not supported by this browser.");
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() ?? "";
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed.startsWith("data: ")) continue;
+        const raw = trimmed.slice(6).trim();
+        if (!raw) continue;
+        try {
+          yield JSON.parse(raw) as OracleStreamEvent;
+        } catch {
+          // skip malformed events
+        }
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
 }
 
 export function getLatestRecommendation(): RecommendationsResponse | null {

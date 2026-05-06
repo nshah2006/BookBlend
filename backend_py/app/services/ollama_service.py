@@ -2,12 +2,79 @@ from __future__ import annotations
 
 import json
 import logging
+from typing import Iterator
 
 import httpx
 
 from app.core.config import get_settings
 
 logger = logging.getLogger(__name__)
+
+_ORACLE_SYSTEM = (
+    "You are the Oracle of the Stacks, a mystical and eloquent book librarian with vast literary knowledge. "
+    "You help readers discover their next perfect book based on mood, desires, and emotional resonance. "
+    "Speak with quiet wisdom and literary flair — poetic but clear, never overwrought. "
+    "Keep responses to 2-4 sentences. When you have matching books, name them naturally in your reply. "
+    "Stay focused on books and reading; gently redirect if asked about anything else."
+)
+
+
+def _build_oracle_messages(
+    message: str,
+    history: list[str] | None,
+    book_context: str,
+) -> list[dict]:
+    msgs: list[dict] = [{"role": "system", "content": _ORACLE_SYSTEM}]
+    for line in (history or [])[-8:]:
+        if line.startswith("user: "):
+            msgs.append({"role": "user", "content": line[6:]})
+        elif line.startswith("assistant: "):
+            msgs.append({"role": "assistant", "content": line[11:]})
+    user_content = message
+    if book_context:
+        user_content += f"\n\n[Books I surfaced for you: {book_context}]"
+    msgs.append({"role": "user", "content": user_content})
+    return msgs
+
+
+def stream_oracle_reply(
+    message: str,
+    history: list[str] | None,
+    book_context: str,
+) -> Iterator[str]:
+    """Stream an Oracle reply from Ollama token-by-token. Falls back to a template on error."""
+    settings = get_settings()
+    msgs = _build_oracle_messages(message, history, book_context)
+    try:
+        with httpx.Client(timeout=90.0, trust_env=not settings.disable_http_proxy) as client:
+            with client.stream(
+                "POST",
+                f"{settings.ollama_base_url}/api/chat",
+                json={"model": settings.ollama_model, "messages": msgs, "stream": True},
+            ) as response:
+                response.raise_for_status()
+                for line in response.iter_lines():
+                    if not line:
+                        continue
+                    try:
+                        data = json.loads(line)
+                    except json.JSONDecodeError:
+                        continue
+                    content = data.get("message", {}).get("content", "")
+                    if content:
+                        yield content
+                    if data.get("done"):
+                        break
+        return
+    except Exception as exc:
+        logger.warning("Ollama chat stream unavailable: %s", exc)
+
+    fallback = _fallback_oracle_parse(message)
+    yield (
+        f"{fallback['analysis']} "
+        "I have surfaced some matches below — share more about the texture or emotion you seek "
+        "and I shall refine my reading of your desires."
+    )
 
 MOOD_OPTIONS = ("energetic", "melancholic", "curious", "romantic", "intense", "peaceful")
 

@@ -1,6 +1,8 @@
-from typing import Annotated
+import json
+from typing import Annotated, Generator
 
 from fastapi import APIRouter, Depends, status
+from fastapi.responses import StreamingResponse
 
 from app.deps import AuthContext, get_optional_auth_context
 from app.schemas import (
@@ -11,7 +13,7 @@ from app.schemas import (
     RecommendationsResponse,
 )
 from app.services.domain import build_ai_recommendations, create_recommendation_request
-from app.services.ollama_service import parse_oracle_prompt
+from app.services.ollama_service import parse_oracle_prompt, stream_oracle_reply
 
 router = APIRouter(tags=["recommendations"])
 
@@ -44,22 +46,39 @@ def oracle_chat(payload: OracleChatInput) -> OracleChatResponse:
         depth=parsed["depth"],
     )
     recommendations = build_ai_recommendations(inferred_input)
-
-    if recommendations:
-        top = recommendations[:3]
-        book_summary = ", ".join(f"{item.book.title} by {item.book.author}" for item in top)
-        reply = (
-            f"{parsed['analysis']} Based on that, your strongest matches are {book_summary}. "
-            "I ranked these by mood alignment, pacing, emotional depth, and rating."
-        )
-    else:
-        reply = (
-            f"{parsed['analysis']} I could not fetch matching books right now, "
-            "but try refining your mood, pace, or depth preferences."
-        )
-
+    book_context = ", ".join(
+        f"{r.book.title} by {r.book.author}" for r in recommendations[:3]
+    )
+    reply = "".join(stream_oracle_reply(payload.message, payload.history, book_context))
     return OracleChatResponse(
         reply=reply,
         inferredInput=inferred_input,
         recommendations=recommendations,
+    )
+
+
+@router.post("/oracle/chat/stream")
+def oracle_chat_stream(payload: OracleChatInput) -> StreamingResponse:
+    def event_stream() -> Generator[str, None, None]:
+        parsed = parse_oracle_prompt(payload.message, payload.history)
+        inferred_input = RecommendationInput(
+            mood=parsed["mood"],
+            pacing=parsed["pacing"],
+            depth=parsed["depth"],
+        )
+        recommendations = build_ai_recommendations(inferred_input)
+        book_context = ", ".join(
+            f"{r.book.title} by {r.book.author}" for r in recommendations[:3]
+        )
+
+        for token in stream_oracle_reply(payload.message, payload.history, book_context):
+            yield f"data: {json.dumps({'content': token})}\n\n"
+
+        recs_data = [r.model_dump(by_alias=True) for r in recommendations]
+        yield f"data: {json.dumps({'done': True, 'recommendations': recs_data})}\n\n"
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )

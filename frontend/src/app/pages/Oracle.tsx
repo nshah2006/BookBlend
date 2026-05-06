@@ -1,15 +1,16 @@
-import React, { useState } from "react";
-import { motion } from "motion/react";
+import React, { useEffect, useRef, useState } from "react";
+import { motion, AnimatePresence } from "motion/react";
 import { Sparkles, ArrowUp, Compass, User, Wand2, BookOpen, Star } from "lucide-react";
 import { Link } from "react-router";
 import { toast } from "sonner";
-import { addBookToLibrary, getAuthToken, oracleChat } from "../lib/api";
+import { addBookToLibrary, getAuthToken, streamOracleChat } from "../lib/api";
 import type { RecommendationResult } from "../types/api";
 
 type Message = {
   id: string;
   role: "user" | "assistant";
   content: string;
+  streaming?: boolean;
 };
 
 export function Oracle() {
@@ -17,43 +18,71 @@ export function Oracle() {
     {
       id: "init",
       role: "assistant",
-      content: "I am the Oracle of the stacks. Speak your desires, however abstract or specific, and I shall unearth the perfect volume.",
+      content:
+        "I am the Oracle of the stacks. Speak your desires, however abstract or specific, and I shall unearth the perfect volume.",
     },
   ]);
   const [input, setInput] = useState("");
-  const [isTyping, setIsTyping] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [recommendations, setRecommendations] = useState<RecommendationResult[]>([]);
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim()) return;
+    const text = input.trim();
+    if (!text || isLoading) return;
 
-    const newMsg: Message = { id: Date.now().toString(), role: "user", content: input };
-    const nextMessages = [...messages, newMsg];
-    setMessages(nextMessages);
+    const userMsg: Message = { id: Date.now().toString(), role: "user", content: text };
+    const history = messages.map((m) => `${m.role}: ${m.content}`);
+    const assistantId = (Date.now() + 1).toString();
+
+    setMessages((prev) => [
+      ...prev,
+      userMsg,
+      { id: assistantId, role: "assistant", content: "", streaming: true },
+    ]);
     setInput("");
-    setIsTyping(true);
+    setIsLoading(true);
 
     try {
-      const history = nextMessages.map((message) => `${message.role}: ${message.content}`);
-      const response = await oracleChat(newMsg.content, history);
-      setRecommendations(response.recommendations);
-      setMessages((prev) => [
-        ...prev,
-        { id: Date.now().toString(), role: "assistant", content: response.reply },
-      ]);
+      for await (const event of streamOracleChat(text, [...history, `user: ${text}`])) {
+        if (event.content) {
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === assistantId ? { ...m, content: m.content + event.content } : m,
+            ),
+          );
+        }
+        if (event.done) {
+          setMessages((prev) =>
+            prev.map((m) => (m.id === assistantId ? { ...m, streaming: false } : m)),
+          );
+          if (event.recommendations) {
+            setRecommendations(event.recommendations);
+          }
+        }
+      }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Oracle is unavailable right now.");
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: Date.now().toString(),
-          role: "assistant",
-          content: "The Oracle's signal is weak right now. Try again in a moment.",
-        },
-      ]);
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === assistantId
+            ? {
+                ...m,
+                content: "The Oracle's signal is weak right now. Try again in a moment.",
+                streaming: false,
+              }
+            : m,
+        ),
+      );
     } finally {
-      setIsTyping(false);
+      setIsLoading(false);
+      inputRef.current?.focus();
     }
   };
 
@@ -78,8 +107,12 @@ export function Oracle() {
       </div>
 
       <header className="max-w-3xl mx-auto w-full flex justify-between items-center mb-12">
-        <Link to="/" className="font-serif font-bold text-xl italic text-primary">BookBlend</Link>
-        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary/40">The Oracle</span>
+        <Link to="/" className="font-serif font-bold text-xl italic text-primary">
+          BookBlend
+        </Link>
+        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary/40">
+          The Oracle
+        </span>
       </header>
 
       <main className="max-w-3xl mx-auto w-full flex-grow flex flex-col">
@@ -88,48 +121,59 @@ export function Oracle() {
             Consult the <span className="italic text-primary/80">Oracle of Pages</span>
           </h1>
           <p className="text-primary/60 text-lg font-light max-w-xl">
-            Describe the texture, the pacing, or the emotional resonance you seek. The Oracle interprets beyond genre.
+            Describe the texture, the pacing, or the emotional resonance you seek. The Oracle
+            interprets beyond genre.
           </p>
         </div>
 
         <div className="flex-grow space-y-10 overflow-y-auto pb-8 scrollbar-hide">
-          {messages.map((msg) => (
-            <motion.div
-              key={msg.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className={`flex gap-6 items-start ${msg.role === "user" ? "flex-row-reverse" : ""}`}
-            >
-              {msg.role === "assistant" ? (
-                <div className="w-12 h-12 bg-primary text-primary-foreground rounded-full flex items-center justify-center shrink-0 shadow-lg mt-1">
-                  <Sparkles className="w-5 h-5" />
-                </div>
-              ) : (
-                <div className="w-12 h-12 bg-surface-container-high rounded-full flex items-center justify-center shrink-0 border border-border/20 mt-1">
-                  <User className="w-5 h-5 text-primary/40" />
-                </div>
-              )}
+          <AnimatePresence initial={false}>
+            {messages.map((msg) => (
+              <motion.div
+                key={msg.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`flex gap-6 items-start ${msg.role === "user" ? "flex-row-reverse" : ""}`}
+              >
+                {msg.role === "assistant" ? (
+                  <div className="w-12 h-12 bg-primary text-primary-foreground rounded-full flex items-center justify-center shrink-0 shadow-lg mt-1">
+                    {msg.streaming ? (
+                      <Compass className="w-5 h-5 animate-spin" />
+                    ) : (
+                      <Sparkles className="w-5 h-5" />
+                    )}
+                  </div>
+                ) : (
+                  <div className="w-12 h-12 bg-surface-container-high rounded-full flex items-center justify-center shrink-0 border border-border/20 mt-1">
+                    <User className="w-5 h-5 text-primary/40" />
+                  </div>
+                )}
 
-              <div className={`max-w-[80%] ${msg.role === "user" ? "text-right" : "text-left"}`}>
-                <p className={`text-xl leading-relaxed ${msg.role === "assistant" ? "font-serif text-primary" : "font-sans text-foreground/80 font-light"}`}>
-                  {msg.content}
-                </p>
-              </div>
-            </motion.div>
-          ))}
-
-          {isTyping && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex gap-6 items-center">
-              <div className="w-12 h-12 bg-primary text-primary-foreground rounded-full flex items-center justify-center shrink-0 shadow-lg">
-                <Compass className="w-5 h-5 animate-spin-slow" />
-              </div>
-              <div className="flex gap-2">
-                <span className="w-2 h-2 bg-primary/40 rounded-full animate-bounce delay-75" />
-                <span className="w-2 h-2 bg-primary/40 rounded-full animate-bounce delay-150" />
-                <span className="w-2 h-2 bg-primary/40 rounded-full animate-bounce delay-300" />
-              </div>
-            </motion.div>
-          )}
+                <div className={`max-w-[80%] ${msg.role === "user" ? "text-right" : "text-left"}`}>
+                  <p
+                    className={`text-xl leading-relaxed ${
+                      msg.role === "assistant"
+                        ? "font-serif text-primary"
+                        : "font-sans text-foreground/80 font-light"
+                    }`}
+                  >
+                    {msg.content}
+                    {msg.streaming && msg.content === "" && (
+                      <span className="inline-flex gap-1 ml-1">
+                        <span className="w-1.5 h-1.5 bg-primary/40 rounded-full animate-bounce [animation-delay:0ms]" />
+                        <span className="w-1.5 h-1.5 bg-primary/40 rounded-full animate-bounce [animation-delay:150ms]" />
+                        <span className="w-1.5 h-1.5 bg-primary/40 rounded-full animate-bounce [animation-delay:300ms]" />
+                      </span>
+                    )}
+                    {msg.streaming && msg.content !== "" && (
+                      <span className="inline-block w-0.5 h-5 bg-primary/60 ml-0.5 animate-pulse align-middle" />
+                    )}
+                  </p>
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+          <div ref={bottomRef} />
         </div>
 
         {recommendations.length > 0 && (
@@ -139,7 +183,10 @@ export function Oracle() {
             </p>
             <div className="space-y-3">
               {recommendations.slice(0, 3).map((item) => (
-                <div key={item.book.id} className="flex flex-col gap-3 rounded-2xl border border-border/30 bg-surface-container-low p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div
+                  key={item.book.id}
+                  className="flex flex-col gap-3 rounded-2xl border border-border/30 bg-surface-container-low p-4 sm:flex-row sm:items-center sm:justify-between"
+                >
                   <div className="min-w-0">
                     <p className="truncate font-serif text-lg text-primary">{item.book.title}</p>
                     <p className="truncate text-sm text-muted-foreground">by {item.book.author}</p>
@@ -166,28 +213,34 @@ export function Oracle() {
         )}
 
         <div className="sticky bottom-6 mt-4">
-          <form onSubmit={handleSend} className="relative group">
+          <form onSubmit={(e) => void handleSend(e)} className="relative group">
             <div className="absolute -inset-2 bg-primary/5 blur-xl group-hover:bg-primary/10 transition-colors rounded-[3rem]" />
             <div className="relative bg-card rounded-full p-2 flex items-center shadow-ambient border border-border/20 group-hover:border-border/40 transition-all">
               <input
+                ref={inputRef}
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Ask the library a question..."
-                className="w-full bg-transparent border-none outline-none px-6 py-4 text-foreground placeholder:text-foreground/30 font-medium"
+                disabled={isLoading}
+                className="w-full bg-transparent border-none outline-none px-6 py-4 text-foreground placeholder:text-foreground/30 font-medium disabled:opacity-50"
               />
               <button
                 type="submit"
-                disabled={!input.trim() || isTyping}
+                disabled={!input.trim() || isLoading}
                 className="w-14 h-14 bg-primary text-primary-foreground rounded-full flex items-center justify-center shrink-0 shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:hover:scale-100"
               >
-                <ArrowUp className="w-6 h-6" />
+                {isLoading ? (
+                  <Compass className="w-5 h-5 animate-spin" />
+                ) : (
+                  <ArrowUp className="w-6 h-6" />
+                )}
               </button>
             </div>
           </form>
           <div className="text-center mt-4">
             <p className="text-[10px] uppercase tracking-[0.2em] font-bold text-primary/30 flex items-center justify-center gap-2">
-              <Wand2 className="w-3 h-3" /> Powered by BookBlend AI
+              <Wand2 className="w-3 h-3" /> Powered by Ollama · llama3.1
             </p>
           </div>
         </div>
