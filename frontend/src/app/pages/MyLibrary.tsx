@@ -1,15 +1,31 @@
 import { useEffect, useMemo, useState } from "react";
-import { Sparkles, Library, Heart, Bookmark, Trash2, BookOpen, Star } from "lucide-react";
+import { Sparkles, Library, Heart, Bookmark, Trash2, BookOpen, Star, TrendingUp } from "lucide-react";
 import { motion } from "motion/react";
 import { Link } from "react-router";
 import { toast } from "sonner";
 import { deleteLibraryItem, getAuthToken, getLibrary, updateLibraryItem } from "../lib/api";
 import type { LibraryItem } from "../types/api";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "../components/ui/dialog";
+import { Slider } from "../components/ui/slider";
+
+interface ProgressDialog {
+  item: LibraryItem;
+  pagesRead: string;
+  progressPercent: number;
+}
 
 export function MyLibrary() {
   const [activeTab, setActiveTab] = useState("reading");
   const [libraryItems, setLibraryItems] = useState<LibraryItem[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
+  const [progressDialog, setProgressDialog] = useState<ProgressDialog | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   const tabs = [
     { id: "reading", name: "Currently Reading", icon: <BookOpen className="w-4 h-4" /> },
@@ -47,23 +63,50 @@ export function MyLibrary() {
     setLibraryItems(response.items);
   };
 
-  const continueReading = async (item: LibraryItem) => {
-    const nextProgress = Math.min(100, item.progressPercent + 10);
+  const openProgressDialog = (item: LibraryItem) => {
+    setProgressDialog({
+      item,
+      pagesRead: item.pagesRead > 0 ? String(item.pagesRead) : "",
+      progressPercent: item.progressPercent,
+    });
+  };
 
+  const saveProgress = async () => {
+    if (!progressDialog) return;
+    const { item, pagesRead, progressPercent } = progressDialog;
+
+    const pages = Math.max(0, parseInt(pagesRead, 10) || 0);
+    const percent = Math.min(100, Math.max(0, progressPercent));
+    const nextStatus = percent >= 100 ? "completed" : "reading";
+
+    setIsSaving(true);
     try {
       await updateLibraryItem(item.bookId, {
-        status: nextProgress >= 100 ? "completed" : "reading",
-        progressPercent: nextProgress,
-        pagesRead: item.pagesRead + 24,
+        status: nextStatus,
+        progressPercent: percent,
+        pagesRead: pages,
       });
       await refreshLibrary();
+      setProgressDialog(null);
       toast.success(
-        nextProgress >= 100
-          ? `You finished ${item.book.title}.`
+        nextStatus === "completed"
+          ? `You finished ${item.book.title}!`
           : `Progress updated for ${item.book.title}.`,
       );
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Unable to update progress.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const startReading = async (item: LibraryItem) => {
+    try {
+      await updateLibraryItem(item.bookId, { status: "reading" });
+      await refreshLibrary();
+      toast.success(`Started reading ${item.book.title}.`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Unable to update status.");
     }
   };
 
@@ -167,7 +210,14 @@ export function MyLibrary() {
                   <div className="flex-grow w-full space-y-4">
                     <div className="flex justify-between text-xs font-bold uppercase tracking-widest text-primary/40">
                       <span>Reading Progress</span>
-                      <span className="text-secondary">{item.progressPercent}%</span>
+                      <span className="text-secondary">
+                        {item.progressPercent}%
+                        {item.pagesRead > 0 && (
+                          <span className="ml-2 text-primary/30 normal-case font-normal">
+                            · {item.pagesRead} pages
+                          </span>
+                        )}
+                      </span>
                     </div>
                     <div className="h-2 w-full bg-primary/5 rounded-full overflow-hidden border border-primary/5">
                       <motion.div
@@ -179,13 +229,22 @@ export function MyLibrary() {
                     </div>
                   </div>
                   <div className="flex gap-4 w-full sm:w-auto">
-                    {item.status !== "completed" && (
+                    {item.status === "wishlist" && (
                       <button
-                        onClick={() => void continueReading(item)}
+                        onClick={() => void startReading(item)}
                         className="flex-grow sm:flex-grow-0 bg-primary text-primary-foreground px-8 py-4 rounded-2xl font-bold text-sm hover:bg-primary/90 transition-all flex items-center justify-center gap-2 shadow-xl border-2 border-primary"
                       >
                         <BookOpen className="w-4 h-4 text-secondary" />
-                        {item.status === "wishlist" ? "Start Reading" : "Continue Reading"}
+                        Start Reading
+                      </button>
+                    )}
+                    {item.status === "reading" && (
+                      <button
+                        onClick={() => openProgressDialog(item)}
+                        className="flex-grow sm:flex-grow-0 bg-primary text-primary-foreground px-8 py-4 rounded-2xl font-bold text-sm hover:bg-primary/90 transition-all flex items-center justify-center gap-2 shadow-xl border-2 border-primary"
+                      >
+                        <TrendingUp className="w-4 h-4 text-secondary" />
+                        Update Progress
                       </button>
                     )}
                     <button
@@ -217,6 +276,99 @@ export function MyLibrary() {
           </Link>
         </div>
       )}
+
+      <Dialog
+        open={progressDialog !== null}
+        onOpenChange={(open) => { if (!open) setProgressDialog(null); }}
+      >
+        <DialogContent className="bg-card border-2 border-border/60 rounded-3xl max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-serif text-2xl text-primary italic">
+              Update Progress
+            </DialogTitle>
+            {progressDialog && (
+              <p className="text-sm text-primary/50 font-medium truncate">
+                {progressDialog.item.book.title}
+              </p>
+            )}
+          </DialogHeader>
+
+          {progressDialog && (
+            <div className="space-y-8 py-2">
+              <div className="space-y-3">
+                <label className="text-xs font-bold uppercase tracking-widest text-primary/40">
+                  Pages Read
+                </label>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="number"
+                    min={0}
+                    value={progressDialog.pagesRead}
+                    onChange={(e) =>
+                      setProgressDialog((prev) =>
+                        prev ? { ...prev, pagesRead: e.target.value } : prev,
+                      )
+                    }
+                    placeholder="0"
+                    className="w-full bg-background border-2 border-border/60 rounded-xl px-4 py-3 text-primary font-bold text-lg focus:outline-none focus:border-secondary/60 transition-colors"
+                  />
+                  <span className="text-primary/40 text-sm font-medium whitespace-nowrap">pages</span>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <label className="text-xs font-bold uppercase tracking-widest text-primary/40">
+                    Progress
+                  </label>
+                  <span className="text-secondary font-bold text-lg tabular-nums">
+                    {progressDialog.progressPercent}%
+                  </span>
+                </div>
+                <Slider
+                  min={0}
+                  max={100}
+                  step={1}
+                  value={[progressDialog.progressPercent]}
+                  onValueChange={([val]) =>
+                    setProgressDialog((prev) =>
+                      prev ? { ...prev, progressPercent: val } : prev,
+                    )
+                  }
+                  className="[&_[data-slot=slider-range]]:bg-gradient-to-r [&_[data-slot=slider-range]]:from-secondary/60 [&_[data-slot=slider-range]]:to-secondary [&_[data-slot=slider-thumb]]:border-secondary"
+                />
+                <div className="flex justify-between text-xs text-primary/20 font-medium">
+                  <span>0%</span>
+                  <span>50%</span>
+                  <span>100%</span>
+                </div>
+              </div>
+
+              {progressDialog.progressPercent >= 100 && (
+                <div className="bg-secondary/10 border border-secondary/20 rounded-2xl px-4 py-3 text-sm text-secondary font-medium text-center">
+                  This will mark the book as completed.
+                </div>
+              )}
+            </div>
+          )}
+
+          <DialogFooter>
+            <button
+              onClick={() => setProgressDialog(null)}
+              className="px-6 py-3 rounded-xl border-2 border-border/60 text-primary/60 font-bold text-sm hover:text-primary hover:border-border transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => void saveProgress()}
+              disabled={isSaving}
+              className="px-8 py-3 bg-primary text-primary-foreground rounded-xl font-bold text-sm hover:bg-primary/90 transition-all border-2 border-primary disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSaving ? "Saving…" : "Save Progress"}
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
