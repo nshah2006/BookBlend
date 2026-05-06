@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { Sparkles, ArrowUp, Compass, User, Wand2, BookOpen, Star } from "lucide-react";
-import { Link } from "react-router";
 import { toast } from "sonner";
 import { addBookToLibrary, getAuthToken, streamOracleChat } from "../lib/api";
 import type { RecommendationResult } from "../types/api";
@@ -100,22 +99,13 @@ export function Oracle() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex flex-col pt-6 px-6 pb-24 lg:pb-6 relative">
+    <div className="min-h-[calc(100vh-5rem)] bg-background text-foreground flex flex-col px-6 pb-24 lg:pb-6 relative">
       <div className="fixed inset-0 pointer-events-none opacity-20 -z-10">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-[100px]" />
         <div className="absolute bottom-1/4 right-1/4 w-[30rem] h-[30rem] bg-secondary/10 rounded-full blur-[150px]" />
       </div>
 
-      <header className="max-w-3xl mx-auto w-full flex justify-between items-center mb-12">
-        <Link to="/" className="font-serif font-bold text-xl italic text-primary">
-          BookBlend
-        </Link>
-        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-primary/40">
-          The Oracle
-        </span>
-      </header>
-
-      <main className="max-w-3xl mx-auto w-full flex-grow flex flex-col">
+      <main className="max-w-3xl mx-auto w-full flex-grow flex flex-col pt-8">
         <div className="space-y-4 mb-12">
           <h1 className="text-4xl md:text-5xl font-serif text-primary">
             Consult the <span className="italic text-primary/80">Oracle of Pages</span>

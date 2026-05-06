@@ -51,10 +51,11 @@ export function Root() {
 
   const navItems = [
     { name: "Home", path: "/", icon: <HomeIcon className="w-5 h-5" /> },
-    { name: "Find Vibe", path: "/mood-input", icon: <Wand2 className="w-5 h-5" /> },
+    { name: "Oracle", path: "/oracle", icon: <Sparkles className="w-5 h-5" /> },
     { name: "Explore", path: "/explore", icon: <Compass className="w-5 h-5" /> },
     { name: "Library", path: "/library", icon: <Library className="w-5 h-5" /> },
     { name: "Quests", path: "/challenges", icon: <Trophy className="w-5 h-5" /> },
+    { name: "Find Vibe", path: "/mood-input", icon: <Wand2 className="w-5 h-5" /> },
     { name: "Profile", path: "/profile", icon: <User className="w-5 h-5" /> },
   ];
 
